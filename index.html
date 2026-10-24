@@ -165,7 +165,7 @@ button, input { font: inherit; color: inherit; }
   <div class="mark">小島<br>出發！</div>
   <div class="brand-text">
     <b>小島探險地圖</b>
-    <div class="passport"><span id="pcount">探險護照 0/7</span><span class="stamps" id="stamps"></span></div>
+    <div class="passport"><span id="pcount">探險護照 0/8</span><span class="stamps" id="stamps"></span></div>
   </div>
 </div>
 
@@ -228,7 +228,13 @@ const ISLANDS = [
     ["恐龍百科洞穴", "暴龍、三角龍、翼龍，牠們的祕密都在書裡。", "恐龍 百科 暴龍"],
     ["借書證櫃檯", "辦一張自己的借書證，一次可以借五本書。", "借書 圖書館 借書證"],
     ["故事接龍營火", "每個人說一句，一起編出一個超好笑的故事。", "故事 接龍 營火"],
-    ["安靜小角落", "想一個人看書的時候，這裡最舒服。", "安靜 看書 角落"]]}
+    ["安靜小角落", "想一個人看書的時候，這裡最舒服。", "安靜 看書 角落"]]},
+  { id: "pokemon", name: "寶可夢島", q: 1, r: 1, color: "#cde77f", tagline: "抓一隻好朋友，一起去冒險", spots: [
+    ["寶可夢中心", "寶可夢累了就帶來這裡休息，馬上恢復精神。", "寶可夢中心 休息 治療"],
+    ["高高草叢", "走進草叢要小心，說不定會跳出一隻野生的寶可夢！", "草叢 野生 捕捉"],
+    ["精靈球工坊", "上面紅色、下面白色，按下中間的按鈕就能打開。", "精靈球 寶貝球 球"],
+    ["皮卡丘廣場", "黃色的電氣鼠在島上跑來跑去，點牠看看會說什麼。", "皮卡丘 電 黃色"],
+    ["圖鑑小書桌", "把看到的寶可夢畫下來，做一本自己的圖鑑。", "圖鑑 畫畫 收集"]]}
 ];
 ISLANDS.forEach((isl, i) => isl.num = String(i + 1).padStart(2, "0"));
 
@@ -239,7 +245,9 @@ const BRIDGES = [
   ["computer", "game", "都要記得護眼和約定時間"],
   ["game", "park", "都要排隊，也都超刺激"],
   ["park", "hotel", "玩累了，就住一晚飯店"],
-  ["hotel", "breakfast", "兩座島都有好吃的早餐"]
+  ["hotel", "breakfast", "兩座島都有好吃的早餐"],
+  ["game", "pokemon", "都可以玩寶可夢遊戲"],
+  ["park", "pokemon", "寶可夢也愛坐旋轉木馬"]
 ];
 const SAYS = {
   home: ["回家囉！今天晚餐吃什麼？", "我來幫忙擺碗筷！"],
@@ -248,7 +256,8 @@ const SAYS = {
   park: ["我可以坐雲霄飛車了嗎？", "我要彩虹棉花糖！"],
   hotel: ["房卡嗶一下，門就開了！", "我要去溜滑水道！"],
   breakfast: ["老闆，我要一份起司蛋餅！", "大冰奶一杯！"],
-  reading: ["我在找暴龍的書～", "這本繪本好好笑！"]
+  reading: ["我在找暴龍的書～", "這本繪本好好笑！"],
+  pokemon: ["去吧！精靈球！", "我的圖鑑又多一隻了！"]
 };
 const byId = Object.fromEntries(ISLANDS.map(i => [i.id, i]));
 const NEIGHBORS = Object.fromEntries(ISLANDS.map(i => [i.id, []]));
@@ -523,6 +532,29 @@ const BUILD = {
   }
 };
 
+BUILD.pokemon = g => {
+  const P = group(g, -1.6, TOP, -2.6);
+  add(P, Cy(1.2, 1.6, .6, 12), "#9aa6b5", 0, .3, 0);
+  const ball = group(P, 0, 3, 0);
+  ball.rotation.y = .25;
+  add(ball, new THREE.SphereGeometry(2.2, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), "#ef3b3b");
+  add(ball, new THREE.SphereGeometry(2.2, 20, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), "#ffffff");
+  add(ball, new THREE.TorusGeometry(2.2, .17, 8, 32), "#26303b").rotation.x = Math.PI / 2;
+  add(ball, Cy(.8, .8, .3, 16), "#26303b", 0, 0, 2.08).rotation.x = Math.PI / 2;
+  add(ball, Cy(.55, .55, .34, 16), glow("#ffffff", .1), 0, 0, 2.14).rotation.x = Math.PI / 2;
+  const C = group(g, 3.7, TOP, -2.4);
+  C.rotation.y = -.35;
+  add(C, Bx(3.2, 2.2, 2.6), "#ffffff", 0, 1.1, 0);
+  add(C, Bx(3.5, .8, 2.9), "#ef3b3b", 0, 2.6, 0);
+  add(C, Bx(1.2, 1.5, .1), glow("#ffe7a8"), 0, .75, 1.31);
+  add(C, Cy(.45, .45, .12, 14), "#ef3b3b", 0, 2.6, 1.46).rotation.x = Math.PI / 2;
+  const grass = [[-4.2, 1.6], [-2.6, 3.6], [3.6, 2.4]];
+  grass.forEach(([x, z]) => {
+    for (let k = 0; k < 7; k++) add(g, Co(.28, rnd(.9, 1.4), 4), k % 2 ? "#4f9a3e" : "#5fae4a", x + rnd(-.8, .8), TOP + .55, z + rnd(-.6, .6));
+  });
+  return [{ x: -1.6, z: -2.6, r: 2.6 }, { x: 3.7, z: -2.4, r: 2.2 }, ...grass.map(([x, z]) => ({ x, z, r: 1.1 }))];
+};
+
 // ---------- islands ----------
 const TREE_SPOTS = [Math.PI * .67, Math.PI, Math.PI * 1.33];
 ISLANDS.forEach((isl, idx) => {
@@ -610,9 +642,33 @@ function makeKid({ shirt, hair, skin, pants, hat }) {
   return { g, inner, legs, arms };
 }
 
+function makeMouse() {
+  const g = new THREE.Group();
+  const inner = group(g);
+  const Y = "#ffd84a";
+  add(inner, Sp(.7, 14, 10), Y, 0, .9, 0).scale.y = 1.05;
+  add(inner, Sp(.62, 14, 10), Y, 0, 1.85, .05);
+  [-1, 1].forEach(s => {
+    const ear = group(inner, s * .3, 2.25, 0);
+    ear.rotation.z = -s * .35;
+    add(ear, Co(.2, 1, 6), Y, 0, .5, 0);
+    add(ear, Co(.12, .32, 6), "#26303b", 0, 1.08, 0);
+    add(inner, Sp(.08, 6, 4), "#1d232b", s * .23, 1.95, .58);
+    add(inner, Sp(.14, 8, 6), "#ef3b3b", s * .42, 1.72, .45);
+  });
+  const legs = [-.3, .3].map(x => { const p = group(inner, x, .3, 0); add(p, Bx(.3, .2, .45), Y, 0, -.2, .1); return p; });
+  const arms = [-.5, .5].map(x => { const p = group(inner, x, 1.15, .3); add(p, Sp(.16, 8, 6), Y, 0, -.15, 0); return p; });
+  add(inner, Bx(.2, .35, .15), "#8a5a2b", 0, .7, -.72).rotation.z = .3;
+  add(inner, Bx(.22, .7, .15), Y, .15, 1.05, -.78).rotation.z = -.6;
+  add(inner, Bx(.6, .75, .15), Y, .25, 1.6, -.82).rotation.z = .5;
+  g.scale.setScalar(.8);
+  scene.add(g);
+  return { g, inner, legs, arms };
+}
+
 const walkers = [];
 function makeWalker(opts, island, pos) {
-  const kid = makeKid(opts);
+  const kid = opts.make ? opts.make() : makeKid(opts);
   const w = { kid, island, pos: pos.clone(), queue: [], wait: rnd(0, 2), phase: rnd(0, 6), swing: 0, speed: rnd(2.2, 3), ...opts.extra };
   kid.g.traverse(o => o.userData.walker = w);
   kid.g.position.copy(w.pos);
@@ -672,6 +728,7 @@ ISLANDS.forEach((isl, i) => {
 const savedLook = store.get("island-look", { shirt: "#e8622c", hat: false, follow: false });
 const player = makeWalker({ shirt: savedLook.shirt, hair: "#2d2420", skin: "#f3c49c", pants: "#3b4a63", hat: savedLook.hat ? "#e8622c" : null, extra: { isPlayer: true, speed: 5.5, wait: 0 } },
   "home", clampOnIsland("home", CENTER.home.clone().add(new THREE.Vector3(0, 0, 5))));
+makeWalker({ make: makeMouse, extra: { stay: true, speed: 3.4, mouse: true } }, "pokemon", freeSpot("pokemon"));
 const chief = makeWalker({ shirt: "#3d8fe0", hair: "#2d2420", skin: "#f3c49c", pants: "#3b4a63", hat: "#ffd23f", extra: { isChief: true } }, "park", freeSpot("park"));
 
 function rebuildPlayer(look) {
@@ -684,7 +741,7 @@ function rebuildPlayer(look) {
 }
 
 function planNpc(w) {
-  if (Math.random() < .28) {
+  if (!w.stay && Math.random() < .28) {
     const other = pick(NEIGHBORS[w.island]);
     w.queue = [...hops([w.island, other]), Object.assign(freeSpot(other), { island: other })];
   } else {
@@ -782,7 +839,7 @@ const visited = new Set(store.get("island-stamps-3d", []));
 function renderStamps() {
   document.getElementById("stamps").innerHTML = ISLANDS.map(i =>
     `<span class="stamp ${visited.has(i.id) ? "on" : ""}" title="${i.name}" style="${visited.has(i.id) ? `background:${i.color}` : ""}"></span>`).join("");
-  document.getElementById("pcount").textContent = `探險護照 ${visited.size}/7`;
+  document.getElementById("pcount").textContent = `探險護照 ${visited.size}/${ISLANDS.length}`;
 }
 function checkVisit() {
   const n = nearestIsland(player.pos);
@@ -790,7 +847,7 @@ function checkVisit() {
   visited.add(n.id);
   store.set("island-stamps-3d", [...visited]);
   renderStamps();
-  if (visited.size === 7) toast("七座島全部走過了！你是小島探險王！");
+  if (visited.size === ISLANDS.length) toast("八座島全部走過了！你是小島探險王！");
   else if (visited.size > 1) toast(`蓋章！${byId[n.id].name}到此一遊`);
 }
 
@@ -801,8 +858,8 @@ function flyTo(target, pos) {
   tween = { t: 0, fT: controls.target.clone(), tT: target, fP: camera.position.clone(), tP: pos };
 }
 function overview() {
-  const k = innerWidth / innerHeight < 1 ? 2.15 : 1;
-  flyTo(new THREE.Vector3(0, 0, 3), new THREE.Vector3(0, 78 * k, 88 * k));
+  const k = innerWidth / innerHeight < 1 ? 2.45 : 1.12;
+  flyTo(new THREE.Vector3(6, 0, 10), new THREE.Vector3(6, 78 * k, 10 + 88 * k));
 }
 function focusIsland(id) {
   const c = CENTER[id];
@@ -951,7 +1008,7 @@ function tapWalker(w) {
     w.island = to; w.pos.copy(freeSpot(to)); w.kid.g.position.copy(w.pos);
     return;
   }
-  say(w, pick(SAYS[nearestIsland(w.pos).id]));
+  say(w, w.mouse ? pick(["皮卡～皮卡丘！", "皮卡皮卡！"]) : pick(SAYS[nearestIsland(w.pos).id]));
 }
 
 // ---------- loop ----------
