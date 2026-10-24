@@ -106,6 +106,10 @@ button, input { font: inherit; color: inherit; }
 .spot i { font-style: normal; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; }
 .spot h3 { margin: 0; font-size: 15px; }
 .spot p { margin: 1px 0 0; color: var(--muted); font-size: 13.5px; }
+.today { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; background: #f2f8dc; }
+.today .label { margin: 0; }
+.today b { font-family: var(--font-display); font-weight: 400; font-size: 22px; margin-right: 8px; }
+.today span { color: var(--muted); font-size: 13.5px; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { border: 1.5px solid var(--line); background: #fff; border-radius: 999px; padding: 5px 11px; cursor: pointer; text-align: left; font-size: 13.5px; }
 .chip b { margin-right: 4px; }
@@ -233,7 +237,7 @@ const ISLANDS = [
     ["寶可夢中心", "寶可夢累了就帶來這裡休息，馬上恢復精神。", "寶可夢中心 休息 治療"],
     ["高高草叢", "走進草叢要小心，說不定會跳出一隻野生的寶可夢！", "草叢 野生 捕捉"],
     ["精靈球工坊", "上面紅色、下面白色，按下中間的按鈕就能打開。", "精靈球 寶貝球 球"],
-    ["皮卡丘廣場", "黃色的電氣鼠在島上跑來跑去，點牠看看會說什麼。", "皮卡丘 電 黃色"],
+    ["寶可夢廣場", "每天都會換一隻寶可夢來島上跑來跑去，今天是誰呢？", "皮卡丘 妙蛙種子 小火龍 傑尼龜 胖丁 可達鴨 伊布 寶可夢"],
     ["圖鑑小書桌", "把看到的寶可夢畫下來，做一本自己的圖鑑。", "圖鑑 畫畫 收集"]]}
 ];
 ISLANDS.forEach((isl, i) => isl.num = String(i + 1).padStart(2, "0"));
@@ -666,6 +670,85 @@ function makeMouse() {
   return { g, inner, legs, arms };
 }
 
+// Other visiting Pokémon share two body plans: standing on two feet, or walking on four.
+function eyes(inner, y, z, color = "#1d232b", x = .23) {
+  [-x, x].forEach(ex => add(inner, Sp(.08, 6, 4), color, ex, y, z));
+}
+function biped(color, belly, extras) {
+  const g = new THREE.Group();
+  const inner = group(g);
+  add(inner, Sp(.7, 14, 10), color, 0, .9, 0);
+  if (belly) add(inner, Sp(.55, 12, 8), belly, 0, .85, .28).scale.z = .7;
+  add(inner, Sp(.62, 14, 10), color, 0, 1.85, .05);
+  eyes(inner, 1.95, .6);
+  const legs = [-.3, .3].map(x => { const p = group(inner, x, .3, 0); add(p, Bx(.32, .22, .45), color, 0, -.2, .1); return p; });
+  const arms = [-.55, .55].map(x => { const p = group(inner, x, 1.15, .25); add(p, Sp(.17, 8, 6), color, 0, -.15, 0); return p; });
+  extras(inner);
+  g.scale.setScalar(.8);
+  scene.add(g);
+  return { g, inner, legs, arms };
+}
+function quadruped(color, extras) {
+  const g = new THREE.Group();
+  const inner = group(g);
+  add(inner, Sp(.7, 14, 10), color, 0, .85, 0).scale.set(1, .8, 1.3);
+  add(inner, Sp(.6, 14, 10), color, 0, 1.45, .8);
+  const legAt = (x, z) => { const p = group(inner, x, .6, z); add(p, Bx(.28, .6, .3), color, 0, -.3, 0); return p; };
+  const legs = [legAt(-.4, .55), legAt(.4, .55)];
+  const arms = [legAt(.4, -.55), legAt(-.4, -.55)];
+  extras(inner);
+  g.scale.setScalar(.8);
+  scene.add(g);
+  return { g, inner, legs, arms };
+}
+const POKEMON = [
+  { name: "皮卡丘", lines: ["皮卡～皮卡丘！", "皮卡皮卡！"], make: makeMouse },
+  { name: "妙蛙種子", lines: ["妙蛙～種子！", "背上的種子曬太陽會長大喔"], make: () => quadruped("#7fcfb0", inner => {
+    eyes(inner, 1.55, 1.33, "#c0392b");
+    add(inner, Sp(.55, 10, 8), "#4f9a3e", 0, 1.5, -.2).scale.y = 1.2;
+    [-1, 1].forEach(s => add(inner, Co(.25, .7, 4), "#5fae4a", s * .35, 2.05, -.2).rotation.z = -s * .5);
+    [-1, 1].forEach(s => add(inner, Co(.14, .3, 5), "#7fcfb0", s * .35, 2, .7));
+  }) },
+  { name: "小火龍", lines: ["小火龍～！", "尾巴的火好溫暖"], make: () => biped("#ff9a4a", "#ffe3a3", inner => {
+    add(inner, Cy(.12, .22, 1, 6), "#ff9a4a", 0, .75, -.8).rotation.x = 1;
+    add(inner, Co(.25, .6, 6), glow("#ffb020", .9), 0, 1.25, -1.2);
+  }) },
+  { name: "傑尼龜", lines: ["傑尼傑尼！", "我會噴水槍！"], make: () => biped("#8fd3f0", "#ffe3a3", inner => {
+    add(inner, Sp(.75, 12, 8), "#b5733a", 0, 1, -.3).scale.z = .7;
+    add(inner, new THREE.TorusGeometry(.22, .09, 6, 10), "#8fd3f0", 0, .55, -.85);
+  }) },
+  { name: "胖丁", lines: ["胖～丁～胖～丁～♪", "聽我唱歌會想睡覺喔"], make: () => {
+    const g = new THREE.Group();
+    const inner = group(g);
+    add(inner, Sp(.95, 16, 12), "#ffb3cf", 0, 1.1, 0);
+    [-1, 1].forEach(s => {
+      add(inner, Sp(.22, 10, 8), "#ffffff", s * .33, 1.3, .8);
+      add(inner, Sp(.15, 8, 6), "#3d8fe0", s * .33, 1.3, .92);
+      add(inner, Co(.25, .45, 5), "#ffb3cf", s * .55, 2.05, 0).rotation.z = -s * .4;
+    });
+    add(inner, new THREE.TorusGeometry(.2, .08, 6, 10, Math.PI * 1.5), "#ffb3cf", 0, 2.1, .45);
+    const legs = [-.35, .35].map(x => { const p = group(inner, x, .3, 0); add(p, Bx(.35, .2, .4), "#ffb3cf", 0, -.15, .1); return p; });
+    const arms = [-.9, .9].map(x => { const p = group(inner, x, 1.1, .2); add(p, Sp(.15, 8, 6), "#ffb3cf", 0, -.1, 0); return p; });
+    g.scale.setScalar(.8);
+    scene.add(g);
+    return { g, inner, legs, arms };
+  } },
+  { name: "可達鴨", lines: ["可達？", "頭好痛…可達可達"], make: () => biped("#ffd84a", null, inner => {
+    add(inner, Bx(.55, .18, .4), "#fff1c2", 0, 1.72, .65);
+    [-.12, 0, .12].forEach(x => add(inner, Cy(.03, .03, .45, 4), "#26303b", x, 2.6, 0));
+  }) },
+  { name: "伊布", lines: ["伊布伊布！", "我可以進化成好多種樣子"], make: () => quadruped("#a8703f", inner => {
+    eyes(inner, 1.55, 1.33);
+    add(inner, Sp(.45, 12, 8), "#fff1c2", 0, 1.05, .6).scale.set(1.1, .8, .8);
+    [-1, 1].forEach(s => add(inner, Co(.22, .9, 5), "#a8703f", s * .38, 2.1, .7).rotation.z = -s * .45);
+    add(inner, Sp(.4, 10, 8), "#a8703f", 0, 1.2, -1.1);
+    add(inner, Sp(.22, 8, 6), "#fff1c2", 0, 1.5, -1.3);
+  }) }
+];
+// a new Pokémon visits each day
+const DAY = Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / 86400000);
+let monIdx = DAY % POKEMON.length;
+
 const walkers = [];
 function makeWalker(opts, island, pos) {
   const kid = opts.make ? opts.make() : makeKid(opts);
@@ -728,7 +811,18 @@ ISLANDS.forEach((isl, i) => {
 const savedLook = store.get("island-look", { shirt: "#e8622c", hat: false, follow: false });
 const player = makeWalker({ shirt: savedLook.shirt, hair: "#2d2420", skin: "#f3c49c", pants: "#3b4a63", hat: savedLook.hat ? "#e8622c" : null, extra: { isPlayer: true, speed: 5.5, wait: 0 } },
   "home", clampOnIsland("home", CENTER.home.clone().add(new THREE.Vector3(0, 0, 5))));
-makeWalker({ make: makeMouse, extra: { stay: true, speed: 3.4, mouse: true } }, "pokemon", freeSpot("pokemon"));
+let monWalker = null;
+function spawnMon(idx) {
+  const at = monWalker ? monWalker.pos : freeSpot("pokemon");
+  if (monWalker) {
+    scene.remove(monWalker.kid.g);
+    monWalker.bubble?.el.remove();
+    walkers.splice(walkers.indexOf(monWalker), 1);
+  }
+  monIdx = idx;
+  monWalker = makeWalker({ make: POKEMON[idx].make, extra: { stay: true, speed: 3.4, mon: POKEMON[idx] } }, "pokemon", at);
+}
+spawnMon(monIdx);
 const chief = makeWalker({ shirt: "#3d8fe0", hair: "#2d2420", skin: "#f3c49c", pants: "#3b4a63", hat: "#ffd23f", extra: { isChief: true } }, "park", freeSpot("park"));
 
 function rebuildPlayer(look) {
@@ -893,11 +987,18 @@ function openIsland(id, fly, term = "") {
       <button class="close" aria-label="關閉">×</button>
     </div>
     <button class="go" id="go">讓「我」走去${isl.name}</button>
+    ${id === "pokemon" ? `<div class="today"><div><p class="label">${monIdx === DAY % POKEMON.length ? "今天來玩的寶可夢" : "現在出來玩的寶可夢"}</p><b>${POKEMON[monIdx].name}</b>
+      <span>明天換${POKEMON[(DAY + 1) % POKEMON.length].name}</span></div><button class="chip" id="next-mon">叫下一隻出來</button></div>` : ""}
     <div><p class="label">島上的 ${isl.spots.length} 個好玩地方</p>
       <ol class="spots">${isl.spots.map(([n, d, t], k) => `<li class="spot ${term && (n + d + t).includes(term) ? "hit" : ""}">
         <i style="background:${isl.color}">${k + 1}</i><div><h3>${n}</h3><p>${d}</p></div></li>`).join("")}</ol></div>
     <div><p class="label">走好朋友橋，去隔壁島</p>
       <div class="chips">${friends.map(f => `<button class="chip" data-go="${f.other}"><b>${byId[f.other].name}</b><span>${f.why}</span></button>`).join("")}</div></div>`);
+  panel.querySelector("#next-mon")?.addEventListener("click", () => {
+    spawnMon((monIdx + 1) % POKEMON.length);
+    say(monWalker, POKEMON[monIdx].lines[0]);
+    openIsland(id, false, term);
+  });
   panel.querySelector("#go").addEventListener("click", () => {
     walkPlayerTo(CENTER[id].clone().add(new THREE.Vector3(rnd(-2, 2), 0, 5)), id);
     if (innerWidth <= 700) setPanel(null);
@@ -1008,7 +1109,7 @@ function tapWalker(w) {
     w.island = to; w.pos.copy(freeSpot(to)); w.kid.g.position.copy(w.pos);
     return;
   }
-  say(w, w.mouse ? pick(["皮卡～皮卡丘！", "皮卡皮卡！"]) : pick(SAYS[nearestIsland(w.pos).id]));
+  say(w, w.mon ? pick(w.mon.lines) : pick(SAYS[nearestIsland(w.pos).id]));
 }
 
 // ---------- loop ----------
