@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>小島探險地圖</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;700&display=swap">
+<style>
+/* Layout: the whole page is the sea; a Catan-style board of 7 hex islands (family in the middle) sits beside a paper "guidebook" panel that stacks below on phones. */
+:root {
+  --sea: #5db7df;
+  --sea-deep: #3f9fcf;
+  --wave: rgba(255,255,255,.45);
+  --sand: #f4e1a9;
+  --sand-edge: #e2c27a;
+  --paper: #fffaf0;
+  --ink: #2d3a4a;
+  --muted: #66758a;
+  --line: #e6dcc6;
+  --sun: #ff9f43;
+  --sun-ink: #4a2a00;
+  --wood: #9a6a3c;
+  --wood-light: #c99a63;
+  --red: #ef5d5d;
+  --yellow: #ffd23f;
+  --blue: #3d8fe0;
+  --white: #ffffff;
+  --t-home: #a8d88a;
+  --t-computer: #8ecdf0;
+  --t-hotel: #c9b3f0;
+  --t-game: #f59ab5;
+  --t-park: #ffb067;
+  --t-breakfast: #ffe07a;
+  --t-reading: #8fd6b8;
+  --font-display: "Huninn", "jf open 粉圓", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --radius: 18px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --sea: #183b5c; --sea-deep: #122f4b; --wave: rgba(170,210,255,.18);
+    --sand: #cdb67c; --sand-edge: #a68e55;
+    --paper: #1f2a38; --ink: #eef3f8; --muted: #a8b6c7; --line: #34445a;
+    --sun: #ffb35c; --sun-ink: #3a2200;
+    --wood: #8a6038; --wood-light: #b78a56;
+    --white: #f6f2e8;
+    --t-home: #86bd6b; --t-computer: #6fb3da; --t-hotel: #a993d6; --t-game: #dc7d9a;
+    --t-park: #e69450; --t-breakfast: #e3c25c; --t-reading: #6fbf9f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --sea: #183b5c; --sea-deep: #122f4b; --wave: rgba(170,210,255,.18);
+  --sand: #cdb67c; --sand-edge: #a68e55;
+  --paper: #1f2a38; --ink: #eef3f8; --muted: #a8b6c7; --line: #34445a;
+  --sun: #ffb35c; --sun-ink: #3a2200;
+  --wood: #8a6038; --wood-light: #b78a56;
+  --white: #f6f2e8;
+  --t-home: #86bd6b; --t-computer: #6fb3da; --t-hotel: #a993d6; --t-game: #dc7d9a;
+  --t-park: #e69450; --t-breakfast: #e3c25c; --t-reading: #6fbf9f;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--sea);
+  background-image: radial-gradient(circle at 20% 10%, var(--wave) 0 2px, transparent 3px), radial-gradient(circle at 70% 60%, var(--wave) 0 2px, transparent 3px);
+  background-size: 90px 90px, 130px 130px;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; }
+
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+
+/* Header */
+.top {
+  background: var(--paper);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px;
+  box-shadow: 0 4px 0 var(--sea-deep);
+}
+.brand { display: flex; flex-direction: column; min-width: 0; flex: 1 1 260px; }
+.brand h1 {
+  font-family: var(--font-display); font-weight: 400;
+  font-size: clamp(1.7rem, 4vw, 2.4rem); line-height: 1.15; margin: 0;
+  letter-spacing: .04em; text-wrap: balance;
+}
+.brand p { margin: 2px 0 0; color: var(--muted); font-size: .95rem; }
+
+.passport { display: flex; flex-direction: column; gap: 4px; }
+.passport-label { font-size: .8rem; color: var(--muted); letter-spacing: .08em; }
+.stamps { display: flex; gap: 4px; }
+.stamp {
+  width: 30px; height: 34px;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: var(--line);
+  display: grid; place-items: center;
+  font-family: var(--font-display); font-size: .8rem; color: var(--muted);
+  transition: transform .3s;
+}
+.stamp.on { color: var(--ink); transform: scale(1.08); }
+
+.tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; flex: 1 1 320px; justify-content: flex-end; }
+.search { position: relative; flex: 1 1 200px; max-width: 320px; min-width: 0; }
+.search input {
+  width: 100%; padding: 10px 14px 10px 40px;
+  border-radius: 999px; border: 2px solid var(--line); background: var(--paper);
+}
+.search input:focus { border-color: var(--sun); outline: none; }
+.search svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; stroke: var(--muted); fill: none; stroke-width: 2.4; }
+.btn {
+  border: 0; cursor: pointer; border-radius: 999px; padding: 10px 16px;
+  background: var(--sun); color: var(--sun-ink); font-weight: 700;
+  box-shadow: 0 3px 0 var(--wood); transition: transform .1s;
+}
+.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--wood); }
+.btn[aria-pressed="false"] { background: var(--line); color: var(--ink); }
+
+/* Main */
+.main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 860px) { .main { grid-template-columns: minmax(0, 1fr); } }
+
+.board-box { position: relative; min-width: 0; }
+.board { width: 100%; height: auto; display: block; max-width: 100%; overflow: visible; }
+.results {
+  position: absolute; left: 8px; top: 8px; right: 8px; z-index: 2;
+  background: var(--paper); border-radius: 14px; padding: 10px 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.18); max-height: 55%; overflow: auto;
+}
+@media (max-width: 860px) { .results { position: static; margin-bottom: 8px; max-height: none; } }
+.results h2 { font-size: .85rem; margin: 0 0 6px; color: var(--muted); font-weight: 400; letter-spacing: .06em; }
+.results ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.results button {
+  width: 100%; text-align: left; border: 0; background: transparent; cursor: pointer;
+  padding: 6px 8px; border-radius: 10px;
+}
+.results button:hover { background: var(--line); }
+.results b { font-family: var(--font-display); font-weight: 400; }
+
+/* SVG board */
+.hex-sand { fill: var(--sand); stroke: var(--sand-edge); stroke-width: 3; }
+.hex-land { stroke: rgba(0,0,0,.08); stroke-width: 2; }
+.island { cursor: pointer; transition: opacity .25s; }
+.island .lift { transition: transform .25s cubic-bezier(.3,1.6,.5,1); transform-box: fill-box; transform-origin: center; }
+.island:hover .lift, .island:focus-visible .lift { transform: translateY(-6px); }
+.island:focus { outline: none; }
+.island:focus-visible .hex-sand { stroke: var(--sun); stroke-width: 6; }
+.island.active .hex-sand { stroke: var(--sun); stroke-width: 7; }
+.island.dim { opacity: .28; }
+.tree { fill: rgba(0,0,0,.12); }
+.label-bg { fill: var(--paper); stroke: var(--ink); stroke-width: 2.5; }
+.label-tx { font-family: var(--font-display); font-size: 21px; fill: var(--ink); text-anchor: middle; dominant-baseline: central; }
+.token { fill: var(--paper); stroke: var(--ink); stroke-width: 2; }
+.token-tx { font-family: var(--font-display); font-size: 15px; fill: var(--red); text-anchor: middle; dominant-baseline: central; }
+
+/* icon parts */
+.p { fill: var(--white); }
+.k { fill: var(--ink); }
+.s { stroke: var(--ink); stroke-width: 3.5; stroke-linejoin: round; stroke-linecap: round; }
+.ln { fill: none; stroke: var(--ink); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+.lnw { fill: none; stroke: var(--white); stroke-width: 3.5; stroke-linecap: round; }
+.f-red { fill: var(--red); } .f-yel { fill: var(--yellow); } .f-blu { fill: var(--blue); } .f-wood { fill: var(--wood-light); }
+
+.bridge { cursor: pointer; transition: opacity .3s; }
+.bridge .deck { stroke: var(--wood); stroke-width: 24; stroke-linecap: round; }
+.bridge .planks { stroke: var(--wood-light); stroke-width: 18; stroke-dasharray: 4 3; }
+.bridge.hot .deck { stroke: var(--sun); }
+.bridges.off { opacity: 0; pointer-events: none; }
+
+.wave { fill: none; stroke: var(--wave); stroke-width: 3; stroke-linecap: round; }
+.boat-hull { fill: var(--red); } .boat-sail { fill: var(--white); stroke: var(--ink); stroke-width: 2; }
+.chief { cursor: pointer; }
+.chief .skin { fill: #f6c9a0; } .chief .hat { fill: var(--yellow); stroke: var(--ink); stroke-width: 2; } .chief .shirt { fill: var(--blue); }
+
+/* Guide panel */
+.guide {
+  background: var(--paper); border-radius: var(--radius); padding: 22px;
+  box-shadow: 0 4px 0 var(--sea-deep); min-width: 0;
+  display: grid; gap: 16px;
+}
+.guide-head { display: flex; gap: 14px; align-items: center; }
+.guide-badge {
+  flex: none; width: 74px; height: 84px;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  display: grid; place-items: center;
+}
+.guide-badge svg { width: 62px; height: 62px; }
+.guide-head h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.9rem; margin: 0; line-height: 1.2; }
+.guide-head p { margin: 2px 0 0; color: var(--muted); }
+.section-label { font-size: .8rem; color: var(--muted); letter-spacing: .1em; margin: 0 0 8px; }
+.spots { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.spot { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; align-items: start; padding: 10px 12px; border-radius: 14px; border: 2px solid var(--line); }
+.spot.hit { border-color: var(--sun); }
+.spot-n {
+  width: 30px; height: 34px; display: grid; place-items: center;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  font-family: var(--font-display); color: var(--ink);
+}
+.spot h3 { margin: 0; font-size: 1.05rem; font-family: var(--font-display); font-weight: 400; }
+.spot p { margin: 2px 0 0; color: var(--muted); font-size: .95rem; }
+.friends { display: flex; flex-wrap: wrap; gap: 8px; }
+.friend {
+  border: 2px solid var(--line); background: transparent; border-radius: 999px;
+  padding: 6px 12px; cursor: pointer; text-align: left;
+}
+.friend:hover { border-color: var(--sun); }
+.friend b { font-family: var(--font-display); font-weight: 400; }
+.friend span { color: var(--muted); font-size: .9rem; }
+
+.hint { color: var(--muted); font-size: .9rem; margin: 0; }
+
+.toast {
+  position: fixed; left: 50%; transform: translate(-50%, 20px);
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  background: var(--ink); color: var(--paper);
+  padding: 12px 20px; border-radius: 999px; font-weight: 700;
+  opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s;
+  max-width: calc(100% - 32px); text-align: center; z-index: 20;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>小島探險地圖</h1>
+      <p>點一座島上岸探險，逛完七座島就能集滿護照章！</p>
+    </div>
+    <div class="passport" aria-live="polite">
+      <span class="passport-label" id="passport-label">探險護照 0 / 7</span>
+      <div class="stamps" id="stamps"></div>
+    </div>
+    <div class="tools">
+      <label class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
+        <input id="q" type="search" placeholder="找找看：蛋餅、恐龍、摩天輪…" aria-label="搜尋島上的地點">
+      </label>
+      <button class="btn" id="bridge-toggle" aria-pressed="true">好朋友橋</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="board-box">
+      <div class="results" id="results" hidden></div>
+      <svg class="board" id="board" viewBox="-330 -300 660 600" role="group" aria-label="七座小島的地圖"></svg>
+    </div>
+    <aside class="guide" id="guide" aria-live="polite"></aside>
+  </main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const ICONS = {
+  computer: `<rect x="-32" y="-32" width="64" height="46" rx="7" class="p s"/>
+    <rect x="-25" y="-25" width="50" height="31" rx="4" class="f-blu"/>
+    <path d="M-9 -15v3M9 -15v3M-9 -4q9 7 18 0" class="lnw"/>
+    <path d="M-7 14 -10 24H10L7 14" class="p s"/>
+    <rect x="-28" y="24" width="56" height="9" rx="3" class="p s"/>`,
+  home: `<rect x="-24" y="-6" width="48" height="38" rx="3" class="p s"/>
+    <path d="M-33 -3 0 -32 33 -3Z" class="f-red s"/>
+    <rect x="-8" y="12" width="16" height="20" rx="2" class="f-wood s"/>
+    <rect x="12" y="2" width="10" height="10" class="f-yel s"/>
+    <path d="M-15 2c-4-5-11 0-4 5l4 3 4-3c7-5 0-10-4-5Z" class="f-red"/>`,
+  hotel: `<rect x="-24" y="-34" width="48" height="66" rx="3" class="p s"/>
+    <rect x="-17" y="-26" width="9" height="9" class="f-yel"/><rect x="-4" y="-26" width="9" height="9" class="f-yel"/><rect x="9" y="-26" width="9" height="9" class="f-yel"/>
+    <rect x="-17" y="-12" width="9" height="9" class="f-yel"/><rect x="-4" y="-12" width="9" height="9" class="f-blu"/><rect x="9" y="-12" width="9" height="9" class="f-yel"/>
+    <rect x="-8" y="14" width="16" height="18" class="f-wood s"/>
+    <circle cx="0" cy="3" r="7" class="f-red"/><path d="M-3 0v6M3 0v6M-3 3h6" class="lnw" style="stroke-width:2"/>`,
+  game: `<path d="M-32 4q0-22 20-22h24q20 0 20 22 0 22-13 22-8 0-12-9h-14q-4 9-12 9-13 0-13-22Z" class="p s"/>
+    <path d="M-18 -4v14M-25 3h14" class="ln" style="stroke-width:5"/>
+    <circle cx="14" cy="-2" r="5" class="f-red"/><circle cx="22" cy="7" r="5" class="f-blu"/>`,
+  park: `<path d="M-20 34 0 2 20 34" class="ln"/>
+    <circle r="28" cy="-4" class="ln"/>
+    <path d="M0 -32v56M-28 -4h56M-20 -24 20 16M20 -24-20 16" class="ln" style="stroke-width:2"/>
+    <circle cx="0" cy="-32" r="7" class="f-red s" style="stroke-width:2"/><circle cx="28" cy="-4" r="7" class="f-yel s" style="stroke-width:2"/>
+    <circle cx="0" cy="24" r="7" class="f-blu s" style="stroke-width:2"/><circle cx="-28" cy="-4" r="7" class="f-yel s" style="stroke-width:2"/>
+    <circle r="5" cy="-4" class="k"/>`,
+  breakfast: `<path d="M-26 30V-4q-9-3-9-13 0-15 17-15h36q17 0 17 15 0 10-9 13v34Z" class="f-wood s"/>
+    <path d="M-16 4q-6-14 10-14 6-6 14 0 16 0 10 14 4 14-16 14-22 0-18-14Z" class="p"/>
+    <circle cx="0" cy="6" r="8" class="f-yel"/>`,
+  reading: `<path d="M0 -12q-17-11-34-6v40q17-5 34 6Z" class="p s"/>
+    <path d="M0 -12q17-11 34-6v40q-17-5-34 6Z" class="p s"/>
+    <path d="M-26 -6q9-2 18 2M-26 4q9-2 18 2M8 -4q9-4 18-2M8 6q9-4 18-2" class="ln" style="stroke-width:2.5"/>
+    <path d="M0 -40 4 -31 13 -30 6 -24 8 -15 0 -20-8 -15-6 -24-13 -30-4 -31Z" class="f-yel s" style="stroke-width:2"/>`
+};
+
+// q, r = axial hex coordinates. Family island sits in the middle.
+const ISLANDS = [
+  { id: "home", name: "家庭島", q: 0, r: 0, tagline: "大家回到家，一起笑一起吃飯", spots: [
+    ["晚餐大圓桌", "全家人圍著圓桌吃飯，輪流說今天最開心的一件事。", "吃飯 晚餐 聊天"],
+    ["週末野餐草地", "鋪上格子野餐墊，帶三明治和飛盤來玩。", "野餐 飛盤 草地"],
+    ["寵物小屋", "幫小狗倒水、幫小貓梳毛，學會照顧好朋友。", "小狗 小貓 寵物"],
+    ["家事闖關站", "摺衣服、擺碗筷、澆花，完成一關就得一顆星。", "家事 幫忙 星星"],
+    ["睡前故事燈塔", "燈光調暗，爸爸媽媽唸一本故事書再說晚安。", "睡覺 故事 晚安"]
+  ]},
+  { id: "computer", name: "電腦島", q: 1, r: -1, tagline: "動動手指，讓電腦聽你的話", spots: [
+    ["程式積木工坊", "把指令積木拖一拖，讓小貓跳舞、讓火箭起飛。", "程式 積木 寫程式"],
+    ["打字小火車", "每打對一個字，小火車就往前開一格。", "打字 鍵盤 注音"],
+    ["電腦畫畫教室", "用滑鼠畫一隻屬於你的怪獸，再幫牠塗上顏色。", "畫畫 滑鼠 繪圖"],
+    ["網路安全小警察", "密碼不告訴別人，看到奇怪的訊息先問大人。", "安全 密碼 網路"],
+    ["護眼瞭望台", "用電腦 30 分鐘，就看遠方 20 秒，讓眼睛休息。", "眼睛 休息 護眼"]
+  ]},
+  { id: "game", name: "電動島", q: 1, r: 0, tagline: "一起闖關，輸贏都是好隊友", spots: [
+    ["合作闖關競技場", "兩個人一起打倒大魔王，互相掩護最厲害。", "闖關 合作 魔王"],
+    ["賽車跑道", "握好方向盤，衝過終點線拿下金盃！", "賽車 跑道 金盃"],
+    ["角色設計工作室", "幫自己的遊戲角色挑衣服、髮型和超能力。", "角色 設計 超能力"],
+    ["約定沙漏", "開始玩之前先和家人約好時間，沙漏漏完就存檔。", "時間 約定 存檔"],
+    ["GG 握手廣場", "不管贏或輸，最後都說一聲「GG，再玩一次」。", "禮貌 輸贏 握手"]
+  ]},
+  { id: "park", name: "遊樂園島", q: 0, r: 1, tagline: "尖叫、大笑，再吃一支棉花糖", spots: [
+    ["摩天輪", "轉到最高的地方，可以看見其他六座島。", "摩天輪 高高 風景"],
+    ["雲霄飛車", "身高要超過 120 公分才能坐，衝下去的時候要抓好！", "雲霄飛車 刺激 身高"],
+    ["旋轉木馬", "挑一匹最喜歡的木馬，跟著音樂轉圈圈。", "木馬 音樂 轉圈"],
+    ["不太可怕的鬼屋", "裡面的鬼都很害羞，拿著小手電筒走一圈吧。", "鬼屋 手電筒 勇敢"],
+    ["棉花糖攤", "粉紅色、藍色，還有彩虹口味的大棉花糖。", "棉花糖 甜點 點心"]
+  ]},
+  { id: "hotel", name: "飯店島", q: -1, r: 1, tagline: "拿著房卡，住進雲朵一樣的房間", spots: [
+    ["櫃檯報到處", "說出你的名字，拿到一張會嗶嗶叫的房卡。", "房卡 櫃檯 報到"],
+    ["雲朵大床房", "枕頭有五顆，窗外就是大海和星星。", "床 枕頭 睡覺"],
+    ["泳池滑水道", "穿好泳衣，從彎彎的滑水道溜下去，噗通！", "游泳 泳池 滑水道"],
+    ["自助早餐吧", "鬆餅、水果、玉米濃湯，自己拿想吃的。", "早餐 鬆餅 自助餐"],
+    ["客房服務電話", "撥 9 號就能請服務生送來熱牛奶。", "電話 牛奶 服務"]
+  ]},
+  { id: "breakfast", name: "早餐店島", q: -1, r: 0, tagline: "「帥哥美女早安！今天要吃什麼？」", spots: [
+    ["點餐單小老闆", "拿起鉛筆，在點餐單上勾一份蛋餅、一杯豆漿。", "點餐 點餐單 鉛筆"],
+    ["蛋餅鐵板", "鐵板滋滋響，蛋餅可以加起司、玉米或鮪魚。", "蛋餅 起司 鐵板"],
+    ["吐司城堡", "火腿蛋吐司疊成一座城堡，再抹上花生醬。", "吐司 火腿 花生"],
+    ["蘿蔔糕煎台", "煎得金黃脆脆的蘿蔔糕，沾一點醬油膏。", "蘿蔔糕 醬油 煎"],
+    ["豆漿奶茶吧", "冰豆漿、溫奶茶，還是要大杯的？", "豆漿 奶茶 飲料"]
+  ]},
+  { id: "reading", name: "閱讀島", q: 0, r: -1, tagline: "翻開一本書，就能去任何地方", spots: [
+    ["繪本樹屋", "爬上樹屋，躺在抱枕上看圖畫書。", "繪本 樹屋 圖畫"],
+    ["恐龍百科洞穴", "暴龍、三角龍、翼龍，牠們的祕密都在書裡。", "恐龍 百科 暴龍"],
+    ["借書證櫃檯", "辦一張自己的借書證，一次可以借五本書。", "借書 圖書館 借書證"],
+    ["故事接龍營火", "每個人說一句，一起編出一個超好笑的故事。", "故事 接龍 營火"],
+    ["安靜小角落", "想一個人看書的時候，這裡最舒服。", "安靜 看書 角落"]
+  ]}
+];
+
+const BRIDGES = [
+  ["breakfast", "home", "週末早上，全家一起去早餐店"],
+  ["reading", "home", "睡前故事要從閱讀島借書"],
+  ["computer", "reading", "用電腦查資料、看電子書"],
+  ["computer", "game", "都要記得護眼和約定時間"],
+  ["game", "park", "都要排隊，也都超刺激"],
+  ["park", "hotel", "玩累了，就住一晚飯店"],
+  ["hotel", "breakfast", "兩座島都有好吃的早餐"]
+];
+
+const byId = Object.fromEntries(ISLANDS.map(i => [i.id, i]));
+const R = 100, SQ3 = Math.sqrt(3);
+const pos = i => ({ x: R * SQ3 * (i.q + i.r / 2), y: R * 1.5 * i.r });
+const hexPts = s => Array.from({ length: 6 }, (_, k) => {
+  const a = Math.PI / 180 * (60 * k - 90);
+  return `${(s * Math.cos(a)).toFixed(1)},${(s * Math.sin(a)).toFixed(1)}`;
+}).join(" ");
+
+const board = document.getElementById("board");
+const guide = document.getElementById("guide");
+const q = document.getElementById("q");
+const results = document.getElementById("results");
+const toastEl = document.getElementById("toast");
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+let current = "home";
+let visited = new Set();
+try { visited = new Set(JSON.parse(localStorage.getItem("island-stamps") || "[]")); } catch (e) {}
+let chiefSpot = "park";
+
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => toastEl.classList.remove("show"), 2600);
+}
+
+function drawBoard() {
+  let svg = "";
+  // waves
+  const waves = [[-280,-250],[200,-270],[-300,120],[250,200],[-120,270],[90,-285],[290,-60],[-310,-60]];
+  svg += waves.map(([x, y]) => `<path class="wave" d="M${x} ${y}q10-8 20 0t20 0"/>`).join("");
+  // boat sailing around the islands
+  svg += `<g id="boat"><path class="boat-hull" d="M-18 0h36l-8 10h-20Z"/><path class="boat-sail" d="M0 -2V-30L16 -4Z"/>
+    ${reduceMotion ? "" : `<animateMotion dur="40s" repeatCount="indefinite" rotate="0" path="M-300 0a300 280 0 1 0 600 0a300 280 0 1 0-600 0"/>`}</g>`;
+  if (reduceMotion) svg = svg.replace('<g id="boat">', '<g id="boat" transform="translate(-300 230)">');
+
+  // bridges sit in the channels between neighbouring islands
+  svg += `<g class="bridges" id="bridges">` + BRIDGES.map(([a, b, why], n) => {
+    const A = pos(byId[a]), B = pos(byId[b]);
+    const p1 = { x: A.x + (B.x - A.x) * .3, y: A.y + (B.y - A.y) * .3 };
+    const p2 = { x: A.x + (B.x - A.x) * .7, y: A.y + (B.y - A.y) * .7 };
+    const d = `x1="${p1.x.toFixed(1)}" y1="${p1.y.toFixed(1)}" x2="${p2.x.toFixed(1)}" y2="${p2.y.toFixed(1)}"`;
+    return `<g class="bridge" data-n="${n}" data-a="${a}" data-b="${b}" tabindex="0" role="button" aria-label="好朋友橋：${byId[a].name}和${byId[b].name}，${why}">
+      <line class="deck" ${d}/><line class="planks" ${d}/></g>`;
+  }).join("") + `</g>`;
+
+
+  // islands
+  for (const isl of ISLANDS) {
+    const { x, y } = pos(isl);
+    const trees = [[-44,-28],[46,-24],[-42,24],[44,22]].map(([tx, ty]) => `<circle class="tree" cx="${tx}" cy="${ty}" r="7"/>`).join("");
+    svg += `<g class="island" data-id="${isl.id}" transform="translate(${x.toFixed(1)} ${y})" tabindex="0" role="button" aria-label="${isl.name}：${isl.tagline}">
+      <g class="lift">
+        <polygon class="hex-sand" points="${hexPts(R * 0.86)}"/>
+        <polygon class="hex-land" points="${hexPts(R * 0.71)}" style="fill:var(--t-${isl.id})"/>
+        ${trees}
+        <g transform="translate(0 -14) scale(.95)">${ICONS[isl.id]}</g>
+        <rect class="label-bg" x="-48" y="34" width="96" height="32" rx="16"/>
+        <text class="label-tx" y="51">${isl.name}</text>
+        <circle class="token" cx="48" cy="-48" r="15"/><text class="token-tx" x="48" y="-47">${isl.spots.length}</text>
+      </g>
+    </g>`;
+  }
+
+  // the hidden island chief
+  svg += `<g class="chief" id="chief" tabindex="0" role="button" aria-label="躲起來的小島長">
+    <rect class="shirt" x="-6" y="0" width="12" height="13" rx="4"/>
+    <circle class="skin" cy="-6" r="7"/>
+    <path class="hat" d="M-10 -9h20l-4-7h-12Z"/>
+  </g>`;
+  board.innerHTML = svg;
+  placeChief();
+
+  board.querySelectorAll(".island").forEach(g => {
+    const go = () => select(g.dataset.id);
+    g.addEventListener("click", go);
+    g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+  });
+  board.querySelectorAll(".bridge").forEach(g => {
+    const go = () => { const [a, b, why] = BRIDGES[g.dataset.n]; toast(`${byId[a].name} ↔ ${byId[b].name}：${why}`); };
+    g.addEventListener("click", go);
+    g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+  });
+  const chief = document.getElementById("chief");
+  const found = () => {
+    const before = chiefSpot;
+    const others = ISLANDS.filter(i => i.id !== before);
+    chiefSpot = others[Math.floor(Math.random() * others.length)].id;
+    placeChief();
+    toast(`你在${byId[before].name}找到小島長了！他又偷偷跑去別座島…`);
+  };
+  chief.addEventListener("click", e => { e.stopPropagation(); found(); });
+  chief.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); found(); } });
+}
+
+function placeChief() {
+  const { x, y } = pos(byId[chiefSpot]);
+  document.getElementById("chief").setAttribute("transform", `translate(${(x - 54).toFixed(1)} ${y + 14}) scale(1.1)`);
+}
+
+function renderStamps() {
+  document.getElementById("stamps").innerHTML = ISLANDS.map(i =>
+    `<span class="stamp ${visited.has(i.id) ? "on" : ""}" style="${visited.has(i.id) ? `background:var(--t-${i.id})` : ""}" title="${i.name}">${visited.has(i.id) ? i.name[0] : "?"}</span>`
+  ).join("");
+  document.getElementById("passport-label").textContent = `探險護照 ${visited.size} / 7`;
+}
+
+function select(id, hitTerm) {
+  current = id;
+  const isl = byId[id];
+  const first = !visited.has(id);
+  visited.add(id);
+  try { localStorage.setItem("island-stamps", JSON.stringify([...visited])); } catch (e) {}
+  renderStamps();
+  if (first && visited.size === 7) toast("七座島全部逛完了！你是小島探險王！");
+  else if (first && visited.size > 1) toast(`蓋章！${isl.name}到此一遊`);
+
+  board.querySelectorAll(".island").forEach(g => g.classList.toggle("active", g.dataset.id === id));
+  board.querySelectorAll(".bridge").forEach(g => g.classList.toggle("hot", g.dataset.a === id || g.dataset.b === id));
+
+  const term = (hitTerm || "").trim();
+  const friends = BRIDGES.filter(([a, b]) => a === id || b === id)
+    .map(([a, b, why]) => ({ other: a === id ? b : a, why }));
+  guide.innerHTML = `
+    <div class="guide-head">
+      <div class="guide-badge" style="background:var(--t-${id})"><svg viewBox="-42 -46 84 84" aria-hidden="true">${ICONS[id]}</svg></div>
+      <div><h2>${isl.name}</h2><p>${isl.tagline}</p></div>
+    </div>
+    <div>
+      <p class="section-label">島上的 ${isl.spots.length} 個好玩地方</p>
+      <ol class="spots">${isl.spots.map(([n, d, tags], k) => {
+        const hit = term && (n + d + tags).includes(term);
+        return `<li class="spot ${hit ? "hit" : ""}"><span class="spot-n" style="background:var(--t-${id})">${k + 1}</span>
+          <div><h3>${n}</h3><p>${d}</p></div></li>`;
+      }).join("")}</ol>
+    </div>
+    <div>
+      <p class="section-label">走好朋友橋，去隔壁島</p>
+      <div class="friends">${friends.map(f =>
+        `<button class="friend" data-go="${f.other}"><b>${byId[f.other].name}</b> <span>${f.why}</span></button>`).join("")}</div>
+    </div>
+    <p class="hint">小祕密：地圖上躲著一位戴黃帽子的小島長，你找得到他嗎？</p>`;
+  guide.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => select(b.dataset.go)));
+}
+
+function search() {
+  const term = q.value.trim();
+  const islands = board.querySelectorAll(".island");
+  if (!term) { results.hidden = true; islands.forEach(g => g.classList.remove("dim")); return; }
+  const hits = [];
+  for (const isl of ISLANDS) {
+    if ((isl.name + isl.tagline).includes(term)) hits.push({ id: isl.id, label: isl.tagline });
+    isl.spots.forEach(([n, d, tags]) => { if ((n + d + tags).includes(term)) hits.push({ id: isl.id, label: n }); });
+  }
+  const hitIds = new Set(hits.map(h => h.id));
+  islands.forEach(g => g.classList.toggle("dim", !hitIds.has(g.dataset.id)));
+  results.hidden = false;
+  results.innerHTML = hits.length
+    ? `<h2>找到 ${hits.length} 個地方</h2><ul>${hits.map(h =>
+        `<li><button data-go="${h.id}"><b>${byId[h.id].name}</b>・${h.label}</button></li>`).join("")}</ul>`
+    : `<h2>沒有找到「${term.replace(/[<>&"]/g, "")}」，換個字試試看，例如：游泳、恐龍、蛋餅</h2>`;
+  results.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => {
+    select(b.dataset.go, term);
+    results.hidden = true;
+  }));
+}
+
+q.addEventListener("input", search);
+q.addEventListener("keydown", e => { if (e.key === "Escape") { q.value = ""; search(); } });
+
+const toggle = document.getElementById("bridge-toggle");
+toggle.addEventListener("click", () => {
+  const on = toggle.getAttribute("aria-pressed") !== "true";
+  toggle.setAttribute("aria-pressed", String(on));
+  document.getElementById("bridges").classList.toggle("off", !on);
+});
+
+drawBoard();
+renderStamps();
+select("home");
+</script>
+</body>
+</html>
