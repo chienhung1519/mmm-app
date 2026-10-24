@@ -28,6 +28,7 @@
   --yellow: #ffd23f;
   --blue: #3d8fe0;
   --white: #ffffff;
+  --skin: #f6c9a0;
   --t-home: #a8d88a;
   --t-computer: #8ecdf0;
   --t-hotel: #c9b3f0;
@@ -182,7 +183,16 @@ button, input { font: inherit; color: inherit; }
 .wave { fill: none; stroke: var(--wave); stroke-width: 3; stroke-linecap: round; }
 .boat-hull { fill: var(--red); } .boat-sail { fill: var(--white); stroke: var(--ink); stroke-width: 2; }
 .chief { cursor: pointer; }
-.chief .skin { fill: #f6c9a0; } .chief .hat { fill: var(--yellow); stroke: var(--ink); stroke-width: 2; } .chief .shirt { fill: var(--blue); }
+.chief .skin { fill: var(--skin); } .chief .hat { fill: var(--yellow); stroke: var(--ink); stroke-width: 2; } .chief .shirt { fill: var(--blue); }
+.walker { cursor: pointer; }
+.walker:focus { outline: none; }
+.walker:focus-visible .shirt { stroke: var(--sun); stroke-width: 3; }
+.walker .skin { fill: var(--skin); }
+.walker .hair { fill: var(--ink); }
+.walker .leg { stroke: var(--ink); stroke-width: 3.2; stroke-linecap: round; }
+.walker .shadow { fill: rgba(0,0,0,.18); }
+.bubble rect { fill: var(--paper); stroke: var(--ink); stroke-width: 2; }
+.bubble text { font-family: var(--font-display); font-size: 14px; fill: var(--ink); text-anchor: middle; dominant-baseline: central; }
 
 /* Guide panel */
 .guide {
@@ -429,6 +439,8 @@ function drawBoard() {
     </g>`;
   }
 
+  svg += `<g id="walkers"></g>`;
+
   // the hidden island chief
   svg += `<g class="chief" id="chief" tabindex="0" role="button" aria-label="躲起來的小島長">
     <rect class="shirt" x="-6" y="0" width="12" height="13" rx="4"/>
@@ -506,7 +518,7 @@ function select(id, hitTerm) {
       <div class="friends">${friends.map(f =>
         `<button class="friend" data-go="${f.other}"><b>${byId[f.other].name}</b> <span>${f.why}</span></button>`).join("")}</div>
     </div>
-    <p class="hint">小祕密：地圖上躲著一位戴黃帽子的小島長，你找得到他嗎？</p>`;
+    <p class="hint">島上的小朋友會走來走去，還會走過好朋友橋去別座島，點他們聽聽在說什麼！地圖上也躲著一位戴黃帽子的小島長，你找得到他嗎？</p>`;
   guide.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => select(b.dataset.go)));
 }
 
@@ -538,11 +550,129 @@ q.addEventListener("keydown", e => { if (e.key === "Escape") { q.value = ""; sea
 const toggle = document.getElementById("bridge-toggle");
 toggle.addEventListener("click", () => {
   const on = toggle.getAttribute("aria-pressed") !== "true";
+  bridgesOn = on;
   toggle.setAttribute("aria-pressed", String(on));
   document.getElementById("bridges").classList.toggle("off", !on);
 });
 
+// Kids who wander around the islands and sometimes cross a bridge.
+const SVGNS = "http://www.w3.org/2000/svg";
+const SHIRTS = ["--red", "--blue", "--yellow", "--sun", "--t-hotel", "--t-reading", "--t-game"];
+const SAYS = {
+  home: ["回家囉！今天晚餐吃什麼？", "我來幫忙擺碗筷！"],
+  computer: ["我用積木讓小貓跳舞了！", "看遠方 20 秒，眼睛休息一下"],
+  game: ["GG！再玩一次！", "我們一起打倒大魔王！"],
+  park: ["我可以坐雲霄飛車了嗎？", "我要彩虹棉花糖！"],
+  hotel: ["房卡嗶一下，門就開了！", "我要去溜滑水道！"],
+  breakfast: ["老闆，我要一份起司蛋餅！", "大冰奶一杯！"],
+  reading: ["我在找暴龍的書～", "這本繪本好好笑！"]
+};
+let bridgesOn = true;
+const walkers = [];
+const rnd = (a, b) => a + Math.random() * (b - a);
+const lerp = (A, B, t) => ({ x: A.x + (B.x - A.x) * t, y: A.y + (B.y - A.y) * t });
+function spotOn(id) {
+  const c = pos(byId[id]), a = rnd(0, Math.PI * 2), k = Math.sqrt(Math.random());
+  return { x: c.x + Math.cos(a) * 46 * k, y: c.y - 6 + Math.sin(a) * 24 * k };
+}
+
+function makeWalker(island, n) {
+  const g = document.createElementNS(SVGNS, "g");
+  g.setAttribute("class", "walker");
+  g.setAttribute("tabindex", "0");
+  g.setAttribute("role", "button");
+  g.setAttribute("aria-label", "島上的小朋友");
+  g.innerHTML = `<ellipse class="shadow" cx="0" cy="15" rx="8" ry="3"/>
+    <g class="body">
+      <line class="leg" x1="-3" y1="6" x2="-3" y2="14"/><line class="leg" x1="3" y1="6" x2="3" y2="14"/>
+      <rect class="shirt" x="-6.5" y="-5" width="13" height="13" rx="4" style="fill:var(${SHIRTS[n % SHIRTS.length]})"/>
+      <circle class="skin" cy="-11" r="6.5"/>
+      <path class="hair" d="M-6.8-11.5a6.8 6.8 0 0 1 13.6 0q-4-3-13.6 0Z"/>
+    </g>`;
+  document.getElementById("walkers").appendChild(g);
+  const start = spotOn(island);
+  const w = { g, body: g.querySelector(".body"), legs: g.querySelectorAll(".leg"), island, x: start.x, y: start.y,
+    queue: [], wait: rnd(0, 2), phase: rnd(0, 6), speed: rnd(18, 28) };
+  const talk = () => {
+    const lines = SAYS[w.island];
+    say(w, lines[Math.floor(Math.random() * lines.length)]);
+  };
+  g.addEventListener("click", talk);
+  g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); talk(); } });
+  walkers.push(w);
+  draw(w, 0);
+}
+
+function say(w, text) {
+  w.g.querySelector(".bubble")?.remove();
+  const width = text.length * 14 + 20;
+  const b = document.createElementNS(SVGNS, "g");
+  b.setAttribute("class", "bubble");
+  b.innerHTML = `<rect x="${-width / 2}" y="-50" width="${width}" height="26" rx="13"/><text y="-37">${text}</text>`;
+  w.g.appendChild(b);
+  w.wait = 2.6;
+  clearTimeout(w.bubbleT);
+  w.bubbleT = setTimeout(() => b.remove(), 2600);
+}
+
+function plan(w) {
+  const links = BRIDGES.filter(([a, b]) => a === w.island || b === w.island);
+  if (bridgesOn && links.length && Math.random() < .3) {
+    const [a, b] = links[Math.floor(Math.random() * links.length)];
+    const other = a === w.island ? b : a;
+    const A = pos(byId[w.island]), B = pos(byId[other]);
+    w.queue = [lerp(A, B, .24), lerp(A, B, .76), { ...spotOn(other), island: other }];
+  } else {
+    w.queue = [spotOn(w.island)];
+  }
+}
+
+function draw(w, swing) {
+  const bob = -Math.abs(Math.sin(w.phase)) * 1.6 * (swing ? 1 : 0);
+  w.g.setAttribute("transform", `translate(${w.x.toFixed(1)} ${w.y.toFixed(1)})`);
+  w.body.setAttribute("transform", `translate(0 ${bob.toFixed(2)})`);
+  const deg = Math.sin(w.phase) * 28 * swing;
+  w.legs[0].setAttribute("transform", `rotate(${deg.toFixed(1)} -3 6)`);
+  w.legs[1].setAttribute("transform", `rotate(${(-deg).toFixed(1)} 3 6)`);
+}
+
+function step(w, dt) {
+  if (w.wait > 0) { w.wait -= dt; draw(w, 0); return; }
+  if (!w.queue.length) plan(w);
+  const t = w.queue[0];
+  const dx = t.x - w.x, dy = t.y - w.y, dist = Math.hypot(dx, dy), move = w.speed * dt;
+  if (dist <= move) {
+    w.x = t.x; w.y = t.y;
+    if (t.island) w.island = t.island;
+    w.queue.shift();
+    if (!w.queue.length) w.wait = rnd(.8, 3.5);
+  } else {
+    w.x += dx / dist * move; w.y += dy / dist * move;
+  }
+  w.phase += dt * 11;
+  draw(w, 1);
+}
+
+function startWalkers() {
+  ISLANDS.forEach((isl, i) => { makeWalker(isl.id, i * 2); makeWalker(isl.id, i * 2 + 1); });
+  if (reduceMotion) return;
+  let last = performance.now();
+  const tick = now => {
+    const dt = Math.min(.05, (now - last) / 1000);
+    last = now;
+    walkers.forEach(w => step(w, dt));
+    // draw walkers lower on the map in front of the ones above them
+    const layer = document.getElementById("walkers");
+    const order = walkers.slice().sort((a, b) => a.y - b.y);
+    const busy = layer.contains(document.activeElement);
+    if (!busy && order.some((w, i) => layer.children[i] !== w.g)) order.forEach(w => layer.appendChild(w.g));
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
 drawBoard();
+startWalkers();
 renderStamps();
 select("home");
 </script>
