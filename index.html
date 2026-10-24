@@ -4,365 +4,233 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>小島探險地圖</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;700;900&display=swap">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
 <style>
-/* Layout: the whole page is the sea; a Catan-style board of 7 hex islands (family in the middle) sits beside a paper "guidebook" panel that stacks below on phones. */
+/* Layout: a full-screen low-poly 3D sea with 7 hex islands; white pill labels float over it,
+   brand card top-left, a rail of round-square buttons top-right, and one info panel
+   (side card on desktop, bottom sheet on phones). Single light look over a 3D scene. */
 :root {
-  --sea: #5db7df;
-  --sea-deep: #3f9fcf;
-  --wave: rgba(255,255,255,.45);
-  --sand: #f4e1a9;
-  --sand-edge: #e2c27a;
-  --paper: #fffaf0;
-  --ink: #2d3a4a;
-  --muted: #66758a;
-  --line: #e6dcc6;
-  --sun: #ff9f43;
-  --sun-ink: #4a2a00;
-  --wood: #9a6a3c;
-  --wood-light: #c99a63;
-  --red: #ef5d5d;
-  --yellow: #ffd23f;
-  --blue: #3d8fe0;
-  --white: #ffffff;
-  --skin: #f6c9a0;
-  --t-home: #a8d88a;
-  --t-computer: #8ecdf0;
-  --t-hotel: #c9b3f0;
-  --t-game: #f59ab5;
-  --t-park: #ffb067;
-  --t-breakfast: #ffe07a;
-  --t-reading: #8fd6b8;
-  --font-display: "Huninn", "jf open 粉圓", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --sky: #bfe3f0;
+  --paper: rgba(255, 255, 255, .94);
+  --ink: #26303b;
+  --muted: #6b7480;
+  --orange: #e8622c;
+  --line: #ece4d6;
+  --font-display: "Huninn", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
   --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
-  --radius: 18px;
+  color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --sea: #183b5c; --sea-deep: #122f4b; --wave: rgba(170,210,255,.18);
-    --sand: #cdb67c; --sand-edge: #a68e55;
-    --paper: #1f2a38; --ink: #eef3f8; --muted: #a8b6c7; --line: #34445a;
-    --sun: #ffb35c; --sun-ink: #3a2200;
-    --wood: #8a6038; --wood-light: #b78a56;
-    --white: #f6f2e8;
-    --t-home: #86bd6b; --t-computer: #6fb3da; --t-hotel: #a993d6; --t-game: #dc7d9a;
-    --t-park: #e69450; --t-breakfast: #e3c25c; --t-reading: #6fbf9f;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --sea: #183b5c; --sea-deep: #122f4b; --wave: rgba(170,210,255,.18);
-  --sand: #cdb67c; --sand-edge: #a68e55;
-  --paper: #1f2a38; --ink: #eef3f8; --muted: #a8b6c7; --line: #34445a;
-  --sun: #ffb35c; --sun-ink: #3a2200;
-  --wood: #8a6038; --wood-light: #b78a56;
-  --white: #f6f2e8;
-  --t-home: #86bd6b; --t-computer: #6fb3da; --t-hotel: #a993d6; --t-game: #dc7d9a;
-  --t-park: #e69450; --t-breakfast: #e3c25c; --t-reading: #6fbf9f;
-  color-scheme: dark;
-}
-
 * { box-sizing: border-box; }
-html, body { margin: 0; }
-body {
-  background: var(--sea);
-  background-image: radial-gradient(circle at 20% 10%, var(--wave) 0 2px, transparent 3px), radial-gradient(circle at 70% 60%, var(--wave) 0 2px, transparent 3px);
-  background-size: 90px 90px, 130px 130px;
-  color: var(--ink);
-  font-family: var(--font-body);
-  font-size: 16px;
-  line-height: 1.6;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 20px 40px;
-}
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body { background: var(--sky); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55; -webkit-tap-highlight-color: transparent; }
 button, input { font: inherit; color: inherit; }
-:focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
 
-.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+#app { position: fixed; inset: 0; }
+#app canvas { display: block; touch-action: none; }
+.labels { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
 
-/* Header */
-.top {
-  background: var(--paper);
-  border-radius: var(--radius);
-  padding: 16px 20px;
-  display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px;
-  box-shadow: 0 4px 0 var(--sea-deep);
+.pill {
+  position: absolute; left: 0; top: 0; pointer-events: auto; cursor: pointer;
+  border: 0; border-radius: 999px; background: var(--paper);
+  padding: 6px 14px; font-weight: 700; font-size: 15px; white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(30, 40, 60, .18);
+  display: flex; gap: 6px; align-items: baseline;
 }
-.brand { display: flex; flex-direction: column; min-width: 0; flex: 1 1 260px; }
-.brand h1 {
-  font-family: var(--font-display); font-weight: 400;
-  font-size: clamp(1.7rem, 4vw, 2.4rem); line-height: 1.15; margin: 0;
-  letter-spacing: .04em; text-wrap: balance;
+.pill .num { color: var(--orange); font-size: 13px; font-variant-numeric: tabular-nums; }
+.pill.me { cursor: default; font-size: 16px; pointer-events: none; }
+.pill.me b { font-weight: 900; }
+.pill.me span { color: var(--orange); }
+.bubble {
+  position: absolute; left: 0; top: 0; pointer-events: none;
+  background: #fff; border-radius: 16px; padding: 7px 13px;
+  font-family: var(--font-display); font-size: 16px; white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(30, 40, 60, .2);
 }
-.brand p { margin: 2px 0 0; color: var(--muted); font-size: .95rem; }
+.bubble::after { content: ""; position: absolute; left: 50%; bottom: -7px; margin-left: -7px; border: 7px solid transparent; border-bottom: 0; border-top-color: #fff; }
 
-.passport { display: flex; flex-direction: column; gap: 4px; }
-.passport-label { font-size: .8rem; color: var(--muted); letter-spacing: .08em; }
-.stamps { display: flex; gap: 4px; }
-.stamp {
-  width: 30px; height: 34px;
-  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-  background: var(--line);
-  display: grid; place-items: center;
-  font-family: var(--font-display); font-size: .8rem; color: var(--muted);
-  transition: transform .3s;
+.brand {
+  position: fixed; z-index: 3;
+  top: calc(12px + env(safe-area-inset-top, 0px)); left: calc(12px + env(safe-area-inset-left, 0px));
+  background: var(--paper); border-radius: 22px; padding: 12px 16px;
+  display: flex; gap: 14px; align-items: center;
+  box-shadow: 0 4px 16px rgba(30, 40, 60, .15);
+  max-width: calc(100% - 110px);
 }
-.stamp.on { color: var(--ink); transform: scale(1.08); }
+.mark { font-family: var(--font-display); color: var(--orange); font-size: 30px; line-height: 1; letter-spacing: .02em; }
+.brand-text { display: grid; gap: 3px; min-width: 0; }
+.brand-text b { font-size: 17px; letter-spacing: .1em; font-weight: 900; }
+.passport { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.stamps { display: flex; gap: 3px; }
+.stamp { width: 13px; height: 13px; border-radius: 50%; border: 2px dashed #c9c2b4; }
+.stamp.on { border: 0; box-shadow: inset 0 0 0 2px rgba(0,0,0,.12); }
 
-.tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; flex: 1 1 320px; justify-content: flex-end; }
-.search { position: relative; flex: 1 1 200px; max-width: 320px; min-width: 0; }
-.search input {
-  width: 100%; padding: 10px 14px 10px 40px;
-  border-radius: 999px; border: 2px solid var(--line); background: var(--paper);
+.rail {
+  position: fixed; z-index: 3; display: grid; gap: 10px;
+  top: calc(12px + env(safe-area-inset-top, 0px)); right: calc(12px + env(safe-area-inset-right, 0px));
 }
-.search input:focus { border-color: var(--sun); outline: none; }
-.search svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; stroke: var(--muted); fill: none; stroke-width: 2.4; }
-.btn {
-  border: 0; cursor: pointer; border-radius: 999px; padding: 10px 16px;
-  background: var(--sun); color: var(--sun-ink); font-weight: 700;
-  box-shadow: 0 3px 0 var(--wood); transition: transform .1s;
+.rail button {
+  width: 86px; height: 58px; border: 0; border-radius: 18px; cursor: pointer;
+  background: var(--paper); box-shadow: 0 3px 12px rgba(30, 40, 60, .15);
+  display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 16px;
 }
-.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--wood); }
-.btn[aria-pressed="false"] { background: var(--line); color: var(--ink); }
+.rail button svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.rail button[aria-pressed="true"] { background: var(--ink); color: #fff; }
 
-/* Main */
-.main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 18px; align-items: start; }
-@media (max-width: 860px) { .main { grid-template-columns: minmax(0, 1fr); } }
-
-.board-box { position: relative; min-width: 0; }
-.board { width: 100%; height: auto; display: block; max-width: 100%; overflow: visible; }
-.results {
-  position: absolute; left: 8px; top: 8px; right: 8px; z-index: 2;
-  background: var(--paper); border-radius: 14px; padding: 10px 12px;
-  box-shadow: 0 6px 18px rgba(0,0,0,.18); max-height: 55%; overflow: auto;
+.panel {
+  position: fixed; z-index: 4;
+  top: calc(12px + env(safe-area-inset-top, 0px)); right: calc(110px + env(safe-area-inset-right, 0px));
+  width: 360px; max-height: calc(100% - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  overflow: auto; background: #fff; border-radius: 22px; padding: 18px 18px 20px;
+  box-shadow: 0 8px 30px rgba(30, 40, 60, .22);
+  display: grid; gap: 14px; align-content: start;
 }
-@media (max-width: 860px) { .results { position: static; margin-bottom: 8px; max-height: none; } }
-.results h2 { font-size: .85rem; margin: 0 0 6px; color: var(--muted); font-weight: 400; letter-spacing: .06em; }
-.results ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-.results button {
-  width: 100%; text-align: left; border: 0; background: transparent; cursor: pointer;
-  padding: 6px 8px; border-radius: 10px;
+.panel-head { display: flex; justify-content: space-between; align-items: start; gap: 10px; }
+.panel h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 26px; line-height: 1.2; }
+.panel h2 .num { color: var(--orange); font-size: 18px; margin-right: 6px; font-family: var(--font-body); font-weight: 700; }
+.panel .sub { margin: 2px 0 0; color: var(--muted); }
+.close { border: 0; background: var(--line); width: 34px; height: 34px; border-radius: 50%; cursor: pointer; flex: none; font-size: 18px; line-height: 1; }
+.label { font-size: 12px; color: var(--muted); letter-spacing: .12em; margin: 0 0 6px; }
+.spots { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.spot { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; padding: 9px 11px; border-radius: 14px; background: #f7f3ec; }
+.spot.hit { box-shadow: inset 0 0 0 2px var(--orange); }
+.spot i { font-style: normal; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+.spot h3 { margin: 0; font-size: 15px; }
+.spot p { margin: 1px 0 0; color: var(--muted); font-size: 13.5px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border: 1.5px solid var(--line); background: #fff; border-radius: 999px; padding: 5px 11px; cursor: pointer; text-align: left; font-size: 13.5px; }
+.chip b { margin-right: 4px; }
+.chip span { color: var(--muted); }
+.go { border: 0; border-radius: 999px; background: var(--orange); color: #fff; font-weight: 700; padding: 11px 18px; cursor: pointer; font-size: 16px; }
+.search { width: 100%; padding: 10px 14px; border-radius: 999px; border: 2px solid var(--line); background: #fff; }
+.search:focus { border-color: var(--orange); outline: none; }
+.isle-list { display: grid; gap: 8px; }
+.isle-row { border: 0; background: #f7f3ec; border-radius: 14px; padding: 10px 12px; text-align: left; cursor: pointer; display: grid; gap: 2px; }
+.isle-row b { font-size: 16px; }
+.isle-row b .num { color: var(--orange); margin-right: 6px; font-size: 13px; }
+.isle-row span { color: var(--muted); font-size: 13.5px; }
+.isle-row mark { background: #ffe1cf; color: inherit; border-radius: 4px; padding: 0 2px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+.swatch { width: 40px; height: 40px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 2px var(--line); cursor: pointer; }
+.swatch[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--orange); }
+.row { display: flex; align-items: center; gap: 10px; font-size: 15px; }
+.row input { width: 20px; height: 20px; accent-color: var(--orange); }
+
+.hint {
+  position: fixed; z-index: 2;
+  left: calc(12px + env(safe-area-inset-left, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  background: var(--paper); border-radius: 999px; padding: 8px 14px; font-size: 13.5px;
+  box-shadow: 0 3px 12px rgba(30, 40, 60, .15); transition: opacity .5s; max-width: calc(100% - 24px);
 }
-.results button:hover { background: var(--line); }
-.results b { font-family: var(--font-display); font-weight: 400; }
-
-/* SVG board */
-.hex-sand { fill: var(--sand); stroke: var(--sand-edge); stroke-width: 3; }
-.hex-land { stroke: rgba(0,0,0,.08); stroke-width: 2; }
-.island { cursor: pointer; transition: opacity .25s; }
-.island .lift { transition: transform .25s cubic-bezier(.3,1.6,.5,1); transform-box: fill-box; transform-origin: center; }
-.island:hover .lift, .island:focus-visible .lift { transform: translateY(-6px); }
-.island:focus { outline: none; }
-.island:focus-visible .hex-sand { stroke: var(--sun); stroke-width: 6; }
-.island.active .hex-sand { stroke: var(--sun); stroke-width: 7; }
-.island.dim { opacity: .28; }
-.tree { fill: rgba(0,0,0,.12); }
-.label-bg { fill: var(--paper); stroke: var(--ink); stroke-width: 2.5; }
-.label-tx { font-family: var(--font-display); font-size: 21px; fill: var(--ink); text-anchor: middle; dominant-baseline: central; }
-.token { fill: var(--paper); stroke: var(--ink); stroke-width: 2; }
-.token-tx { font-family: var(--font-display); font-size: 15px; fill: var(--red); text-anchor: middle; dominant-baseline: central; }
-
-/* icon parts */
-.p { fill: var(--white); }
-.k { fill: var(--ink); }
-.s { stroke: var(--ink); stroke-width: 3.5; stroke-linejoin: round; stroke-linecap: round; }
-.ln { fill: none; stroke: var(--ink); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
-.lnw { fill: none; stroke: var(--white); stroke-width: 3.5; stroke-linecap: round; }
-.f-red { fill: var(--red); } .f-yel { fill: var(--yellow); } .f-blu { fill: var(--blue); } .f-wood { fill: var(--wood-light); }
-
-.bridge { cursor: pointer; transition: opacity .3s; }
-.bridge .deck { stroke: var(--wood); stroke-width: 24; stroke-linecap: round; }
-.bridge .planks { stroke: var(--wood-light); stroke-width: 18; stroke-dasharray: 4 3; }
-.bridge.hot .deck { stroke: var(--sun); }
-.bridges.off { opacity: 0; pointer-events: none; }
-
-.wave { fill: none; stroke: var(--wave); stroke-width: 3; stroke-linecap: round; }
-.boat-hull { fill: var(--red); } .boat-sail { fill: var(--white); stroke: var(--ink); stroke-width: 2; }
-.chief { cursor: pointer; }
-.chief .skin { fill: var(--skin); } .chief .hat { fill: var(--yellow); stroke: var(--ink); stroke-width: 2; } .chief .shirt { fill: var(--blue); }
-.walker { cursor: pointer; }
-.walker:focus { outline: none; }
-.walker:focus-visible .shirt { stroke: var(--sun); stroke-width: 3; }
-.walker .skin { fill: var(--skin); }
-.walker .hair { fill: var(--ink); }
-.walker .leg { stroke: var(--ink); stroke-width: 3.2; stroke-linecap: round; }
-.walker .shadow { fill: rgba(0,0,0,.18); }
-.bubble rect { fill: var(--paper); stroke: var(--ink); stroke-width: 2; }
-.bubble text { font-family: var(--font-display); font-size: 14px; fill: var(--ink); text-anchor: middle; dominant-baseline: central; }
-
-/* Guide panel */
-.guide {
-  background: var(--paper); border-radius: var(--radius); padding: 22px;
-  box-shadow: 0 4px 0 var(--sea-deep); min-width: 0;
-  display: grid; gap: 16px;
-}
-.guide-head { display: flex; gap: 14px; align-items: center; }
-.guide-badge {
-  flex: none; width: 74px; height: 84px;
-  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-  display: grid; place-items: center;
-}
-.guide-badge svg { width: 62px; height: 62px; }
-.guide-head h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.9rem; margin: 0; line-height: 1.2; }
-.guide-head p { margin: 2px 0 0; color: var(--muted); }
-.section-label { font-size: .8rem; color: var(--muted); letter-spacing: .1em; margin: 0 0 8px; }
-.spots { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.spot { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; align-items: start; padding: 10px 12px; border-radius: 14px; border: 2px solid var(--line); }
-.spot.hit { border-color: var(--sun); }
-.spot-n {
-  width: 30px; height: 34px; display: grid; place-items: center;
-  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-  font-family: var(--font-display); color: var(--ink);
-}
-.spot h3 { margin: 0; font-size: 1.05rem; font-family: var(--font-display); font-weight: 400; }
-.spot p { margin: 2px 0 0; color: var(--muted); font-size: .95rem; }
-.friends { display: flex; flex-wrap: wrap; gap: 8px; }
-.friend {
-  border: 2px solid var(--line); background: transparent; border-radius: 999px;
-  padding: 6px 12px; cursor: pointer; text-align: left;
-}
-.friend:hover { border-color: var(--sun); }
-.friend b { font-family: var(--font-display); font-weight: 400; }
-.friend span { color: var(--muted); font-size: .9rem; }
-
-.hint { color: var(--muted); font-size: .9rem; margin: 0; }
-
 .toast {
-  position: fixed; left: 50%; transform: translate(-50%, 20px);
-  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-  background: var(--ink); color: var(--paper);
-  padding: 12px 20px; border-radius: 999px; font-weight: 700;
-  opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s;
-  max-width: calc(100% - 32px); text-align: center; z-index: 20;
+  position: fixed; z-index: 6; left: 50%; transform: translate(-50%, 20px);
+  bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  background: var(--ink); color: #fff; padding: 11px 20px; border-radius: 999px; font-weight: 700;
+  opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s; text-align: center; max-width: calc(100% - 32px);
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+.loading { position: fixed; inset: 0; display: grid; place-items: center; z-index: 8; background: var(--sky); font-family: var(--font-display); font-size: 22px; transition: opacity .6s; padding: 16px; text-align: center; }
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition: none !important; animation: none !important; }
+@media (max-width: 700px) {
+  .brand { padding: 9px 12px; gap: 10px; border-radius: 18px; }
+  .mark { display: none; }
+  .hint .more { display: none; }
+  .brand-text b { font-size: 14px; }
+  .rail { gap: 8px; }
+  .rail button { width: 64px; height: 50px; font-size: 14px; flex-direction: column; gap: 0; border-radius: 16px; }
+  .panel {
+    top: auto; right: 0; left: 0; bottom: 0; width: auto; max-height: 58%;
+    border-radius: 22px 22px 0 0;
+    padding: 16px max(16px, env(safe-area-inset-right, 0px)) calc(18px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  }
+  .pill { font-size: 13px; padding: 5px 11px; }
 }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="top">
-    <div class="brand">
-      <h1>小島探險地圖</h1>
-      <p>點一座島上岸探險，逛完七座島就能集滿護照章！</p>
-    </div>
-    <div class="passport" aria-live="polite">
-      <span class="passport-label" id="passport-label">探險護照 0 / 7</span>
-      <div class="stamps" id="stamps"></div>
-    </div>
-    <div class="tools">
-      <label class="search">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
-        <input id="q" type="search" placeholder="找找看：蛋餅、恐龍、摩天輪…" aria-label="搜尋島上的地點">
-      </label>
-      <button class="btn" id="bridge-toggle" aria-pressed="true">好朋友橋</button>
-    </div>
-  </header>
+<div id="app"></div>
+<div class="labels" id="labels"></div>
 
-  <main class="main">
-    <div class="board-box">
-      <div class="results" id="results" hidden></div>
-      <svg class="board" id="board" viewBox="-330 -300 660 600" role="group" aria-label="七座小島的地圖"></svg>
-    </div>
-    <aside class="guide" id="guide" aria-live="polite"></aside>
-  </main>
+<div class="brand">
+  <div class="mark">小島<br>出發！</div>
+  <div class="brand-text">
+    <b>小島探險地圖</b>
+    <div class="passport"><span id="pcount">探險護照 0/7</span><span class="stamps" id="stamps"></span></div>
+  </div>
 </div>
+
+<nav class="rail" aria-label="地圖工具">
+  <button id="b-view"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg>全景</button>
+  <button id="b-char" aria-pressed="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5q3.5 3 7 0M9 10h.01M15 10h.01"/></svg>角色</button>
+  <button id="b-list" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h14"/></svg>清單</button>
+  <button id="b-time"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="time-label">白天</span></button>
+</nav>
+
+<section class="panel" id="panel" hidden aria-live="polite"></section>
+<div class="hint" id="hint">點地面，「我」就會走過去<span class="more">・拖曳轉動・雙指或滾輪縮放</span></div>
 <div class="toast" id="toast" role="status"></div>
+<div class="loading" id="loading">小島浮出水面中…</div>
 
-<script>
-const ICONS = {
-  computer: `<rect x="-32" y="-32" width="64" height="46" rx="7" class="p s"/>
-    <rect x="-25" y="-25" width="50" height="31" rx="4" class="f-blu"/>
-    <path d="M-9 -15v3M9 -15v3M-9 -4q9 7 18 0" class="lnw"/>
-    <path d="M-7 14 -10 24H10L7 14" class="p s"/>
-    <rect x="-28" y="24" width="56" height="9" rx="3" class="p s"/>`,
-  home: `<rect x="-24" y="-6" width="48" height="38" rx="3" class="p s"/>
-    <path d="M-33 -3 0 -32 33 -3Z" class="f-red s"/>
-    <rect x="-8" y="12" width="16" height="20" rx="2" class="f-wood s"/>
-    <rect x="12" y="2" width="10" height="10" class="f-yel s"/>
-    <path d="M-15 2c-4-5-11 0-4 5l4 3 4-3c7-5 0-10-4-5Z" class="f-red"/>`,
-  hotel: `<rect x="-24" y="-34" width="48" height="66" rx="3" class="p s"/>
-    <rect x="-17" y="-26" width="9" height="9" class="f-yel"/><rect x="-4" y="-26" width="9" height="9" class="f-yel"/><rect x="9" y="-26" width="9" height="9" class="f-yel"/>
-    <rect x="-17" y="-12" width="9" height="9" class="f-yel"/><rect x="-4" y="-12" width="9" height="9" class="f-blu"/><rect x="9" y="-12" width="9" height="9" class="f-yel"/>
-    <rect x="-8" y="14" width="16" height="18" class="f-wood s"/>
-    <circle cx="0" cy="3" r="7" class="f-red"/><path d="M-3 0v6M3 0v6M-3 3h6" class="lnw" style="stroke-width:2"/>`,
-  game: `<path d="M-32 4q0-22 20-22h24q20 0 20 22 0 22-13 22-8 0-12-9h-14q-4 9-12 9-13 0-13-22Z" class="p s"/>
-    <path d="M-18 -4v14M-25 3h14" class="ln" style="stroke-width:5"/>
-    <circle cx="14" cy="-2" r="5" class="f-red"/><circle cx="22" cy="7" r="5" class="f-blu"/>`,
-  park: `<path d="M-20 34 0 2 20 34" class="ln"/>
-    <circle r="28" cy="-4" class="ln"/>
-    <path d="M0 -32v56M-28 -4h56M-20 -24 20 16M20 -24-20 16" class="ln" style="stroke-width:2"/>
-    <circle cx="0" cy="-32" r="7" class="f-red s" style="stroke-width:2"/><circle cx="28" cy="-4" r="7" class="f-yel s" style="stroke-width:2"/>
-    <circle cx="0" cy="24" r="7" class="f-blu s" style="stroke-width:2"/><circle cx="-28" cy="-4" r="7" class="f-yel s" style="stroke-width:2"/>
-    <circle r="5" cy="-4" class="k"/>`,
-  breakfast: `<path d="M-26 30V-4q-9-3-9-13 0-15 17-15h36q17 0 17 15 0 10-9 13v34Z" class="f-wood s"/>
-    <path d="M-16 4q-6-14 10-14 6-6 14 0 16 0 10 14 4 14-16 14-22 0-18-14Z" class="p"/>
-    <circle cx="0" cy="6" r="8" class="f-yel"/>`,
-  reading: `<path d="M0 -12q-17-11-34-6v40q17-5 34 6Z" class="p s"/>
-    <path d="M0 -12q17-11 34-6v40q-17-5-34 6Z" class="p s"/>
-    <path d="M-26 -6q9-2 18 2M-26 4q9-2 18 2M8 -4q9-4 18-2M8 6q9-4 18-2" class="ln" style="stroke-width:2.5"/>
-    <path d="M0 -40 4 -31 13 -30 6 -24 8 -15 0 -20-8 -15-6 -24-13 -30-4 -31Z" class="f-yel s" style="stroke-width:2"/>`
-};
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
-// q, r = axial hex coordinates. Family island sits in the middle.
+// ---------- data ----------
 const ISLANDS = [
-  { id: "home", name: "家庭島", q: 0, r: 0, tagline: "大家回到家，一起笑一起吃飯", spots: [
-    ["晚餐大圓桌", "全家人圍著圓桌吃飯，輪流說今天最開心的一件事。", "吃飯 晚餐 聊天"],
-    ["週末野餐草地", "鋪上格子野餐墊，帶三明治和飛盤來玩。", "野餐 飛盤 草地"],
-    ["寵物小屋", "幫小狗倒水、幫小貓梳毛，學會照顧好朋友。", "小狗 小貓 寵物"],
-    ["家事闖關站", "摺衣服、擺碗筷、澆花，完成一關就得一顆星。", "家事 幫忙 星星"],
-    ["睡前故事燈塔", "燈光調暗，爸爸媽媽唸一本故事書再說晚安。", "睡覺 故事 晚安"]
-  ]},
-  { id: "computer", name: "電腦島", q: 1, r: -1, tagline: "動動手指，讓電腦聽你的話", spots: [
+  { id: "computer", name: "電腦島", q: 1, r: -1, color: "#8fc9e8", tagline: "動動手指，讓電腦聽你的話", spots: [
     ["程式積木工坊", "把指令積木拖一拖，讓小貓跳舞、讓火箭起飛。", "程式 積木 寫程式"],
     ["打字小火車", "每打對一個字，小火車就往前開一格。", "打字 鍵盤 注音"],
     ["電腦畫畫教室", "用滑鼠畫一隻屬於你的怪獸，再幫牠塗上顏色。", "畫畫 滑鼠 繪圖"],
     ["網路安全小警察", "密碼不告訴別人，看到奇怪的訊息先問大人。", "安全 密碼 網路"],
-    ["護眼瞭望台", "用電腦 30 分鐘，就看遠方 20 秒，讓眼睛休息。", "眼睛 休息 護眼"]
-  ]},
-  { id: "game", name: "電動島", q: 1, r: 0, tagline: "一起闖關，輸贏都是好隊友", spots: [
-    ["合作闖關競技場", "兩個人一起打倒大魔王，互相掩護最厲害。", "闖關 合作 魔王"],
-    ["賽車跑道", "握好方向盤，衝過終點線拿下金盃！", "賽車 跑道 金盃"],
-    ["角色設計工作室", "幫自己的遊戲角色挑衣服、髮型和超能力。", "角色 設計 超能力"],
-    ["約定沙漏", "開始玩之前先和家人約好時間，沙漏漏完就存檔。", "時間 約定 存檔"],
-    ["GG 握手廣場", "不管贏或輸，最後都說一聲「GG，再玩一次」。", "禮貌 輸贏 握手"]
-  ]},
-  { id: "park", name: "遊樂園島", q: 0, r: 1, tagline: "尖叫、大笑，再吃一支棉花糖", spots: [
-    ["摩天輪", "轉到最高的地方，可以看見其他六座島。", "摩天輪 高高 風景"],
-    ["雲霄飛車", "身高要超過 120 公分才能坐，衝下去的時候要抓好！", "雲霄飛車 刺激 身高"],
-    ["旋轉木馬", "挑一匹最喜歡的木馬，跟著音樂轉圈圈。", "木馬 音樂 轉圈"],
-    ["不太可怕的鬼屋", "裡面的鬼都很害羞，拿著小手電筒走一圈吧。", "鬼屋 手電筒 勇敢"],
-    ["棉花糖攤", "粉紅色、藍色，還有彩虹口味的大棉花糖。", "棉花糖 甜點 點心"]
-  ]},
-  { id: "hotel", name: "飯店島", q: -1, r: 1, tagline: "拿著房卡，住進雲朵一樣的房間", spots: [
+    ["護眼瞭望台", "用電腦 30 分鐘，就看遠方 20 秒，讓眼睛休息。", "眼睛 休息 護眼"]]},
+  { id: "home", name: "家庭島", q: 0, r: 0, color: "#9fd17f", tagline: "大家回到家，一起笑一起吃飯", spots: [
+    ["晚餐大圓桌", "全家人圍著圓桌吃飯，輪流說今天最開心的一件事。", "吃飯 晚餐 聊天"],
+    ["週末野餐草地", "鋪上格子野餐墊，帶三明治和飛盤來玩。", "野餐 飛盤 草地"],
+    ["寵物小屋", "幫小狗倒水、幫小貓梳毛，學會照顧好朋友。", "小狗 小貓 寵物"],
+    ["家事闖關站", "摺衣服、擺碗筷、澆花，完成一關就得一顆星。", "家事 幫忙 星星"],
+    ["睡前故事燈塔", "燈光調暗，爸爸媽媽唸一本故事書再說晚安。", "睡覺 故事 晚安"]]},
+  { id: "hotel", name: "飯店島", q: -1, r: 1, color: "#c5b2ee", tagline: "拿著房卡，住進雲朵一樣的房間", spots: [
     ["櫃檯報到處", "說出你的名字，拿到一張會嗶嗶叫的房卡。", "房卡 櫃檯 報到"],
     ["雲朵大床房", "枕頭有五顆，窗外就是大海和星星。", "床 枕頭 睡覺"],
     ["泳池滑水道", "穿好泳衣，從彎彎的滑水道溜下去，噗通！", "游泳 泳池 滑水道"],
     ["自助早餐吧", "鬆餅、水果、玉米濃湯，自己拿想吃的。", "早餐 鬆餅 自助餐"],
-    ["客房服務電話", "撥 9 號就能請服務生送來熱牛奶。", "電話 牛奶 服務"]
-  ]},
-  { id: "breakfast", name: "早餐店島", q: -1, r: 0, tagline: "「帥哥美女早安！今天要吃什麼？」", spots: [
+    ["客房服務電話", "撥 9 號就能請服務生送來熱牛奶。", "電話 牛奶 服務"]]},
+  { id: "game", name: "電動島", q: 1, r: 0, color: "#f2a0b9", tagline: "一起闖關，輸贏都是好隊友", spots: [
+    ["合作闖關競技場", "兩個人一起打倒大魔王，互相掩護最厲害。", "闖關 合作 魔王"],
+    ["賽車跑道", "握好方向盤，衝過終點線拿下金盃！", "賽車 跑道 金盃"],
+    ["角色設計工作室", "幫自己的遊戲角色挑衣服、髮型和超能力。", "角色 設計 超能力"],
+    ["約定沙漏", "開始玩之前先和家人約好時間，沙漏漏完就存檔。", "時間 約定 存檔"],
+    ["GG 握手廣場", "不管贏或輸，最後都說一聲「GG，再玩一次」。", "禮貌 輸贏 握手"]]},
+  { id: "park", name: "遊樂園島", q: 0, r: 1, color: "#ffb36b", tagline: "尖叫、大笑，再吃一支棉花糖", spots: [
+    ["摩天輪", "轉到最高的地方，可以看見其他六座島。", "摩天輪 高高 風景"],
+    ["雲霄飛車", "身高要超過 120 公分才能坐，衝下去的時候要抓好！", "雲霄飛車 刺激 身高"],
+    ["旋轉木馬", "挑一匹最喜歡的木馬，跟著音樂轉圈圈。", "木馬 音樂 轉圈"],
+    ["不太可怕的鬼屋", "裡面的鬼都很害羞，拿著小手電筒走一圈吧。", "鬼屋 手電筒 勇敢"],
+    ["棉花糖攤", "粉紅色、藍色，還有彩虹口味的大棉花糖。", "棉花糖 甜點 點心"]]},
+  { id: "breakfast", name: "早餐店島", q: -1, r: 0, color: "#ffd970", tagline: "「帥哥美女早安！今天要吃什麼？」", spots: [
     ["點餐單小老闆", "拿起鉛筆，在點餐單上勾一份蛋餅、一杯豆漿。", "點餐 點餐單 鉛筆"],
     ["蛋餅鐵板", "鐵板滋滋響，蛋餅可以加起司、玉米或鮪魚。", "蛋餅 起司 鐵板"],
     ["吐司城堡", "火腿蛋吐司疊成一座城堡，再抹上花生醬。", "吐司 火腿 花生"],
     ["蘿蔔糕煎台", "煎得金黃脆脆的蘿蔔糕，沾一點醬油膏。", "蘿蔔糕 醬油 煎"],
-    ["豆漿奶茶吧", "冰豆漿、溫奶茶，還是要大杯的？", "豆漿 奶茶 飲料"]
-  ]},
-  { id: "reading", name: "閱讀島", q: 0, r: -1, tagline: "翻開一本書，就能去任何地方", spots: [
+    ["豆漿奶茶吧", "冰豆漿、溫奶茶，還是要大杯的？", "豆漿 奶茶 飲料"]]},
+  { id: "reading", name: "閱讀島", q: 0, r: -1, color: "#8fd3b5", tagline: "翻開一本書，就能去任何地方", spots: [
     ["繪本樹屋", "爬上樹屋，躺在抱枕上看圖畫書。", "繪本 樹屋 圖畫"],
     ["恐龍百科洞穴", "暴龍、三角龍、翼龍，牠們的祕密都在書裡。", "恐龍 百科 暴龍"],
     ["借書證櫃檯", "辦一張自己的借書證，一次可以借五本書。", "借書 圖書館 借書證"],
     ["故事接龍營火", "每個人說一句，一起編出一個超好笑的故事。", "故事 接龍 營火"],
-    ["安靜小角落", "想一個人看書的時候，這裡最舒服。", "安靜 看書 角落"]
-  ]}
+    ["安靜小角落", "想一個人看書的時候，這裡最舒服。", "安靜 看書 角落"]]}
 ];
+ISLANDS.forEach((isl, i) => isl.num = String(i + 1).padStart(2, "0"));
 
 const BRIDGES = [
   ["breakfast", "home", "週末早上，全家一起去早餐店"],
@@ -373,191 +241,6 @@ const BRIDGES = [
   ["park", "hotel", "玩累了，就住一晚飯店"],
   ["hotel", "breakfast", "兩座島都有好吃的早餐"]
 ];
-
-const byId = Object.fromEntries(ISLANDS.map(i => [i.id, i]));
-const R = 100, SQ3 = Math.sqrt(3);
-const pos = i => ({ x: R * SQ3 * (i.q + i.r / 2), y: R * 1.5 * i.r });
-const hexPts = s => Array.from({ length: 6 }, (_, k) => {
-  const a = Math.PI / 180 * (60 * k - 90);
-  return `${(s * Math.cos(a)).toFixed(1)},${(s * Math.sin(a)).toFixed(1)}`;
-}).join(" ");
-
-const board = document.getElementById("board");
-const guide = document.getElementById("guide");
-const q = document.getElementById("q");
-const results = document.getElementById("results");
-const toastEl = document.getElementById("toast");
-const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-let current = "home";
-let visited = new Set();
-try { visited = new Set(JSON.parse(localStorage.getItem("island-stamps") || "[]")); } catch (e) {}
-let chiefSpot = "park";
-
-function toast(msg) {
-  toastEl.textContent = msg;
-  toastEl.classList.add("show");
-  clearTimeout(toast.t);
-  toast.t = setTimeout(() => toastEl.classList.remove("show"), 2600);
-}
-
-function drawBoard() {
-  let svg = "";
-  // waves
-  const waves = [[-280,-250],[200,-270],[-300,120],[250,200],[-120,270],[90,-285],[290,-60],[-310,-60]];
-  svg += waves.map(([x, y]) => `<path class="wave" d="M${x} ${y}q10-8 20 0t20 0"/>`).join("");
-  // boat sailing around the islands
-  svg += `<g id="boat"><path class="boat-hull" d="M-18 0h36l-8 10h-20Z"/><path class="boat-sail" d="M0 -2V-30L16 -4Z"/>
-    ${reduceMotion ? "" : `<animateMotion dur="40s" repeatCount="indefinite" rotate="0" path="M-300 0a300 280 0 1 0 600 0a300 280 0 1 0-600 0"/>`}</g>`;
-  if (reduceMotion) svg = svg.replace('<g id="boat">', '<g id="boat" transform="translate(-300 230)">');
-
-  // bridges sit in the channels between neighbouring islands
-  svg += `<g class="bridges" id="bridges">` + BRIDGES.map(([a, b, why], n) => {
-    const A = pos(byId[a]), B = pos(byId[b]);
-    const p1 = { x: A.x + (B.x - A.x) * .3, y: A.y + (B.y - A.y) * .3 };
-    const p2 = { x: A.x + (B.x - A.x) * .7, y: A.y + (B.y - A.y) * .7 };
-    const d = `x1="${p1.x.toFixed(1)}" y1="${p1.y.toFixed(1)}" x2="${p2.x.toFixed(1)}" y2="${p2.y.toFixed(1)}"`;
-    return `<g class="bridge" data-n="${n}" data-a="${a}" data-b="${b}" tabindex="0" role="button" aria-label="好朋友橋：${byId[a].name}和${byId[b].name}，${why}">
-      <line class="deck" ${d}/><line class="planks" ${d}/></g>`;
-  }).join("") + `</g>`;
-
-
-  // islands
-  for (const isl of ISLANDS) {
-    const { x, y } = pos(isl);
-    const trees = [[-44,-28],[46,-24],[-42,24],[44,22]].map(([tx, ty]) => `<circle class="tree" cx="${tx}" cy="${ty}" r="7"/>`).join("");
-    svg += `<g class="island" data-id="${isl.id}" transform="translate(${x.toFixed(1)} ${y})" tabindex="0" role="button" aria-label="${isl.name}：${isl.tagline}">
-      <g class="lift">
-        <polygon class="hex-sand" points="${hexPts(R * 0.86)}"/>
-        <polygon class="hex-land" points="${hexPts(R * 0.71)}" style="fill:var(--t-${isl.id})"/>
-        ${trees}
-        <g transform="translate(0 -14) scale(.95)">${ICONS[isl.id]}</g>
-        <rect class="label-bg" x="-48" y="34" width="96" height="32" rx="16"/>
-        <text class="label-tx" y="51">${isl.name}</text>
-        <circle class="token" cx="48" cy="-48" r="15"/><text class="token-tx" x="48" y="-47">${isl.spots.length}</text>
-      </g>
-    </g>`;
-  }
-
-  svg += `<g id="walkers"></g>`;
-
-  // the hidden island chief
-  svg += `<g class="chief" id="chief" tabindex="0" role="button" aria-label="躲起來的小島長">
-    <rect class="shirt" x="-6" y="0" width="12" height="13" rx="4"/>
-    <circle class="skin" cy="-6" r="7"/>
-    <path class="hat" d="M-10 -9h20l-4-7h-12Z"/>
-  </g>`;
-  board.innerHTML = svg;
-  placeChief();
-
-  board.querySelectorAll(".island").forEach(g => {
-    const go = () => select(g.dataset.id);
-    g.addEventListener("click", go);
-    g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
-  });
-  board.querySelectorAll(".bridge").forEach(g => {
-    const go = () => { const [a, b, why] = BRIDGES[g.dataset.n]; toast(`${byId[a].name} ↔ ${byId[b].name}：${why}`); };
-    g.addEventListener("click", go);
-    g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
-  });
-  const chief = document.getElementById("chief");
-  const found = () => {
-    const before = chiefSpot;
-    const others = ISLANDS.filter(i => i.id !== before);
-    chiefSpot = others[Math.floor(Math.random() * others.length)].id;
-    placeChief();
-    toast(`你在${byId[before].name}找到小島長了！他又偷偷跑去別座島…`);
-  };
-  chief.addEventListener("click", e => { e.stopPropagation(); found(); });
-  chief.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); found(); } });
-}
-
-function placeChief() {
-  const { x, y } = pos(byId[chiefSpot]);
-  document.getElementById("chief").setAttribute("transform", `translate(${(x - 54).toFixed(1)} ${y + 14}) scale(1.1)`);
-}
-
-function renderStamps() {
-  document.getElementById("stamps").innerHTML = ISLANDS.map(i =>
-    `<span class="stamp ${visited.has(i.id) ? "on" : ""}" style="${visited.has(i.id) ? `background:var(--t-${i.id})` : ""}" title="${i.name}">${visited.has(i.id) ? i.name[0] : "?"}</span>`
-  ).join("");
-  document.getElementById("passport-label").textContent = `探險護照 ${visited.size} / 7`;
-}
-
-function select(id, hitTerm) {
-  current = id;
-  const isl = byId[id];
-  const first = !visited.has(id);
-  visited.add(id);
-  try { localStorage.setItem("island-stamps", JSON.stringify([...visited])); } catch (e) {}
-  renderStamps();
-  if (first && visited.size === 7) toast("七座島全部逛完了！你是小島探險王！");
-  else if (first && visited.size > 1) toast(`蓋章！${isl.name}到此一遊`);
-
-  board.querySelectorAll(".island").forEach(g => g.classList.toggle("active", g.dataset.id === id));
-  board.querySelectorAll(".bridge").forEach(g => g.classList.toggle("hot", g.dataset.a === id || g.dataset.b === id));
-
-  const term = (hitTerm || "").trim();
-  const friends = BRIDGES.filter(([a, b]) => a === id || b === id)
-    .map(([a, b, why]) => ({ other: a === id ? b : a, why }));
-  guide.innerHTML = `
-    <div class="guide-head">
-      <div class="guide-badge" style="background:var(--t-${id})"><svg viewBox="-42 -46 84 84" aria-hidden="true">${ICONS[id]}</svg></div>
-      <div><h2>${isl.name}</h2><p>${isl.tagline}</p></div>
-    </div>
-    <div>
-      <p class="section-label">島上的 ${isl.spots.length} 個好玩地方</p>
-      <ol class="spots">${isl.spots.map(([n, d, tags], k) => {
-        const hit = term && (n + d + tags).includes(term);
-        return `<li class="spot ${hit ? "hit" : ""}"><span class="spot-n" style="background:var(--t-${id})">${k + 1}</span>
-          <div><h3>${n}</h3><p>${d}</p></div></li>`;
-      }).join("")}</ol>
-    </div>
-    <div>
-      <p class="section-label">走好朋友橋，去隔壁島</p>
-      <div class="friends">${friends.map(f =>
-        `<button class="friend" data-go="${f.other}"><b>${byId[f.other].name}</b> <span>${f.why}</span></button>`).join("")}</div>
-    </div>
-    <p class="hint">島上的小朋友會走來走去，還會走過好朋友橋去別座島，點他們聽聽在說什麼！地圖上也躲著一位戴黃帽子的小島長，你找得到他嗎？</p>`;
-  guide.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => select(b.dataset.go)));
-}
-
-function search() {
-  const term = q.value.trim();
-  const islands = board.querySelectorAll(".island");
-  if (!term) { results.hidden = true; islands.forEach(g => g.classList.remove("dim")); return; }
-  const hits = [];
-  for (const isl of ISLANDS) {
-    if ((isl.name + isl.tagline).includes(term)) hits.push({ id: isl.id, label: isl.tagline });
-    isl.spots.forEach(([n, d, tags]) => { if ((n + d + tags).includes(term)) hits.push({ id: isl.id, label: n }); });
-  }
-  const hitIds = new Set(hits.map(h => h.id));
-  islands.forEach(g => g.classList.toggle("dim", !hitIds.has(g.dataset.id)));
-  results.hidden = false;
-  results.innerHTML = hits.length
-    ? `<h2>找到 ${hits.length} 個地方</h2><ul>${hits.map(h =>
-        `<li><button data-go="${h.id}"><b>${byId[h.id].name}</b>・${h.label}</button></li>`).join("")}</ul>`
-    : `<h2>沒有找到「${term.replace(/[<>&"]/g, "")}」，換個字試試看，例如：游泳、恐龍、蛋餅</h2>`;
-  results.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => {
-    select(b.dataset.go, term);
-    results.hidden = true;
-  }));
-}
-
-q.addEventListener("input", search);
-q.addEventListener("keydown", e => { if (e.key === "Escape") { q.value = ""; search(); } });
-
-const toggle = document.getElementById("bridge-toggle");
-toggle.addEventListener("click", () => {
-  const on = toggle.getAttribute("aria-pressed") !== "true";
-  bridgesOn = on;
-  toggle.setAttribute("aria-pressed", String(on));
-  document.getElementById("bridges").classList.toggle("off", !on);
-});
-
-// Kids who wander around the islands and sometimes cross a bridge.
-const SVGNS = "http://www.w3.org/2000/svg";
-const SHIRTS = ["--red", "--blue", "--yellow", "--sun", "--t-hotel", "--t-reading", "--t-game"];
 const SAYS = {
   home: ["回家囉！今天晚餐吃什麼？", "我來幫忙擺碗筷！"],
   computer: ["我用積木讓小貓跳舞了！", "看遠方 20 秒，眼睛休息一下"],
@@ -567,114 +250,769 @@ const SAYS = {
   breakfast: ["老闆，我要一份起司蛋餅！", "大冰奶一杯！"],
   reading: ["我在找暴龍的書～", "這本繪本好好笑！"]
 };
-let bridgesOn = true;
-const walkers = [];
+const byId = Object.fromEntries(ISLANDS.map(i => [i.id, i]));
+const NEIGHBORS = Object.fromEntries(ISLANDS.map(i => [i.id, []]));
+BRIDGES.forEach(([a, b]) => { NEIGHBORS[a].push(b); NEIGHBORS[b].push(a); });
+
+// ---------- helpers ----------
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const rnd = (a, b) => a + Math.random() * (b - a);
-const lerp = (A, B, t) => ({ x: A.x + (B.x - A.x) * t, y: A.y + (B.y - A.y) * t });
-function spotOn(id) {
-  const c = pos(byId[id]), a = rnd(0, Math.PI * 2), k = Math.sqrt(Math.random());
-  return { x: c.x + Math.cos(a) * 46 * k, y: c.y - 6 + Math.sin(a) * 24 * k };
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const store = {
+  get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+const toastEl = document.getElementById("toast");
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => toastEl.classList.remove("show"), 2800);
 }
 
-function makeWalker(island, n) {
-  const g = document.createElementNS(SVGNS, "g");
-  g.setAttribute("class", "walker");
-  g.setAttribute("tabindex", "0");
-  g.setAttribute("role", "button");
-  g.setAttribute("aria-label", "島上的小朋友");
-  g.innerHTML = `<ellipse class="shadow" cx="0" cy="15" rx="8" ry="3"/>
-    <g class="body">
-      <line class="leg" x1="-3" y1="6" x2="-3" y2="14"/><line class="leg" x1="3" y1="6" x2="3" y2="14"/>
-      <rect class="shirt" x="-6.5" y="-5" width="13" height="13" rx="4" style="fill:var(${SHIRTS[n % SHIRTS.length]})"/>
-      <circle class="skin" cy="-11" r="6.5"/>
-      <path class="hair" d="M-6.8-11.5a6.8 6.8 0 0 1 13.6 0q-4-3-13.6 0Z"/>
-    </g>`;
-  document.getElementById("walkers").appendChild(g);
-  const start = spotOn(island);
-  const w = { g, body: g.querySelector(".body"), legs: g.querySelectorAll(".leg"), island, x: start.x, y: start.y,
-    queue: [], wait: rnd(0, 2), phase: rnd(0, 6), speed: rnd(18, 28) };
-  const talk = () => {
-    const lines = SAYS[w.island];
-    say(w, lines[Math.floor(Math.random() * lines.length)]);
-  };
-  g.addEventListener("click", talk);
-  g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); talk(); } });
+// ---------- renderer / scene ----------
+const app = document.getElementById("app");
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+} catch (e) {
+  document.getElementById("loading").textContent = "這台裝置不支援 3D 畫面，換一個瀏覽器試試看。";
+  throw e;
+}
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+app.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color("#bfe3f0");
+scene.fog = new THREE.Fog("#bfe3f0", 220, 450);
+const camera = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, 1, 800);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.maxPolarAngle = 1.2;
+controls.minDistance = 16;
+controls.maxDistance = 300;
+controls.screenSpacePanning = false;
+
+const hemi = new THREE.HemisphereLight("#ffffff", "#b9a98a", 1.3);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight("#fff6e8", 2.2);
+sun.position.set(40, 70, 35);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -70, right: 70, top: 70, bottom: -70, near: 10, far: 220 });
+sun.shadow.bias = -0.0006;
+scene.add(sun);
+
+const matCache = new Map();
+function mat(color) {
+  if (color && color.isMaterial) return color;
+  if (!matCache.has(color)) matCache.set(color, new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: .85 }));
+  return matCache.get(color);
+}
+const glowMats = [];
+function glow(color, dayEmissive = 0) {
+  const m = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: dayEmissive, flatShading: true, roughness: .6 });
+  m.userData.day = dayEmissive;
+  glowMats.push(m);
+  return m;
+}
+function add(parent, geo, color, x = 0, y = 0, z = 0) {
+  const m = new THREE.Mesh(geo, mat(color));
+  m.position.set(x, y, z);
+  m.castShadow = m.receiveShadow = true;
+  parent.add(m);
+  return m;
+}
+const Bx = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+const Cy = (rt, rb, h, s = 12) => new THREE.CylinderGeometry(rt, rb, h, s);
+const Sp = (r, w = 12, h = 8) => new THREE.SphereGeometry(r, w, h);
+const Co = (r, h, s = 8) => new THREE.ConeGeometry(r, h, s);
+const group = (parent, x = 0, y = 0, z = 0) => { const g = new THREE.Group(); g.position.set(x, y, z); parent.add(g); return g; };
+
+// ---------- world layout ----------
+const SPACING = 13.9, SQ3 = Math.sqrt(3);
+const TOP = 1.5, HEX_R = 9.6, WALK_R = 7.0;
+const CENTER = {};
+ISLANDS.forEach(i => CENTER[i.id] = new THREE.Vector3(SPACING * SQ3 * (i.q + i.r / 2), 0, SPACING * 1.5 * i.r));
+const BLOCK = {};
+const grounds = [], landmarks = [], spinners = [];
+
+// water
+const waterMat = new THREE.MeshStandardMaterial({ color: "#5ea3b8", flatShading: true, roughness: .5, metalness: .05 });
+const waterGeo = new THREE.PlaneGeometry(420, 420, 70, 70);
+const water = new THREE.Mesh(waterGeo, waterMat);
+water.rotation.x = -Math.PI / 2;
+water.receiveShadow = true;
+scene.add(water);
+function animateWater(t) {
+  const p = waterGeo.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i);
+    p.setZ(i, Math.sin(x * .16 + t * .9) * .18 + Math.cos(y * .13 + t * .7) * .18);
+  }
+  p.needsUpdate = true;
+  waterGeo.computeVertexNormals();
+}
+animateWater(0);
+
+function tree(parent, x, z, s = 1, leaf = "#6fb35a") {
+  const g = group(parent, x, TOP, z);
+  g.scale.setScalar(s);
+  add(g, Cy(.22, .32, 1.4, 6), "#8a5a35", 0, .7, 0);
+  add(g, new THREE.IcosahedronGeometry(1.35, 0), leaf, 0, 2.2, 0);
+  add(g, new THREE.IcosahedronGeometry(.9, 0), leaf, .5, 3.1, .2);
+  return g;
+}
+function lamp(parent, x, z) {
+  const g = group(parent, x, TOP, z);
+  add(g, Cy(.08, .1, 2.6, 6), "#3a4250", 0, 1.3, 0);
+  add(g, Bx(.5, .12, .5), "#3a4250", 0, 2.65, 0);
+  add(g, Sp(.26, 8, 6), glow("#ffe7a8"), 0, 2.85, 0);
+}
+
+// ---------- landmarks (each returns circles kids walk around, in island-local x/z) ----------
+const BUILD = {
+  home(g) {
+    const L = group(g, 0, TOP, -2.6);
+    add(L, Bx(5, 3, 3.6), "#fff4e0", 0, 1.5, 0);
+    add(L, Co(3.9, 2.2, 4), "#e85d4f", 0, 4.1, 0).rotation.y = Math.PI / 4;
+    add(L, Bx(.6, 1.3, .6), "#b5533f", 1.3, 4.5, -.6);
+    add(L, Bx(1, 1.8, .1), "#8a5a35", 0, .9, 1.81);
+    add(L, Bx(.9, .9, .1), glow("#ffe7a8"), -1.5, 1.9, 1.81);
+    add(L, Bx(.9, .9, .1), glow("#ffe7a8"), 1.5, 1.9, 1.81);
+    add(g, Bx(2.8, .06, 2.1), "#ff7b7b", -3.3, TOP + .03, 2.3);
+    add(g, Bx(.8, .5, .6), "#c99a63", -3.3, TOP + .3, 2.3);
+    const dog = group(g, 3.2, TOP, 2.2);
+    add(dog, Bx(.9, .5, .45), "#c98b52", 0, .55, 0);
+    add(dog, Bx(.5, .5, .5), "#c98b52", .55, .9, 0);
+    add(dog, Bx(.12, .5, .12), "#c98b52", -.3, .2, .15); add(dog, Bx(.12, .5, .12), "#c98b52", .3, .2, -.15);
+    add(dog, Bx(.12, .2, .2), "#7a4f2c", .55, 1.2, .2); add(dog, Bx(.12, .2, .2), "#7a4f2c", .55, 1.2, -.2);
+    dog.rotation.y = -.6;
+    return [{ x: 0, z: -2.6, r: 3.3 }, { x: 3.2, z: 2.2, r: .8 }];
+  },
+  computer(g) {
+    const L = group(g, 0, TOP, -3);
+    add(L, Bx(2.2, .2, 1.2), "#5b6472", 0, .1, 0);
+    add(L, Cy(.3, .3, 1.6, 8), "#5b6472", 0, .9, 0);
+    add(L, Bx(6.4, 4, .5), "#3a4250", 0, 3.6, 0);
+    add(L, Bx(5.8, 3.4, .12), glow("#3d8fe0", .35), 0, 3.6, .27);
+    add(L, Bx(.4, .75, .06), "#ffffff", -1, 4.05, .35);
+    add(L, Bx(.4, .75, .06), "#ffffff", 1, 4.05, .35);
+    add(L, new THREE.TorusGeometry(.9, .12, 6, 14, Math.PI), "#ffffff", 0, 3.25, .35).rotation.z = Math.PI;
+    const K = group(g, 0, TOP, .8);
+    add(K, Bx(4.4, .25, 1.6), "#e9edf2", 0, .13, 0);
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 8; c++) add(K, Bx(.38, .14, .32), "#9aa6b5", -1.75 + c * .5, .3, -.45 + r * .45);
+    add(g, Sp(.38, 10, 6), "#e9edf2", 3.1, TOP + .2, 1).scale.y = .55;
+    return [{ x: 0, z: -3, r: 3.4 }, { x: 0, z: .8, r: 2.4 }, { x: 3.1, z: 1, r: .6 }];
+  },
+  game(g) {
+    add(g, Cy(.3, .4, 2, 8), "#5b6472", 0, TOP + 1, -2.6);
+    const P = group(g, 0, TOP + 2.6, -2.6);
+    P.rotation.x = .7;
+    add(P, Bx(4.4, 1, 2.2), "#f7f7fb");
+    add(P, Cy(1.15, 1.15, 1, 14), "#f7f7fb", -2.2, 0, .35);
+    add(P, Cy(1.15, 1.15, 1, 14), "#f7f7fb", 2.2, 0, .35);
+    add(P, Bx(1.3, .25, .42), "#2d3a4a", -1.9, .55, 0);
+    add(P, Bx(.42, .25, 1.3), "#2d3a4a", -1.9, .55, 0);
+    [["#ef5d5d", 1.9, -.5], ["#3d8fe0", 2.5, 0], ["#ffd23f", 1.3, 0], ["#4fb38a", 1.9, .5]].forEach(([c, x, z]) => add(P, Cy(.25, .25, .3, 10), c, x, .6, z));
+    [-4.6, 4.6].forEach((x, i) => {
+      const A = group(g, x, TOP, -.4);
+      A.rotation.y = i ? -.4 : .4;
+      add(A, Bx(1.5, 2.8, 1.3), i ? "#8e7cc3" : "#ef5d5d", 0, 1.4, 0);
+      add(A, Bx(1.1, .9, .06), glow("#7fe0ff", .4), 0, 2.1, .66);
+      add(A, Bx(1.5, .2, .7), "#2d3a4a", 0, 1.35, .9);
+      add(A, Cy(.06, .06, .4, 6), "#2d3a4a", -.3, 1.6, .95);
+      add(A, Sp(.12, 8, 6), "#ef5d5d", -.3, 1.82, .95);
+    });
+    return [{ x: 0, z: -2.6, r: 3.2 }, { x: -4.6, z: -.4, r: 1.3 }, { x: 4.6, z: -.4, r: 1.3 }];
+  },
+  park(g) {
+    const F = group(g, -1.6, TOP, -3);
+    [-.5, .5].forEach(z => {
+      add(F, Bx(.35, 5.8, .35), "#6b7a8f", -1.3, 2.7, z).rotation.z = -.25;
+      add(F, Bx(.35, 5.8, .35), "#6b7a8f", 1.3, 2.7, z).rotation.z = .25;
+    });
+    const W = group(F, 0, 5.4, 0);
+    add(W, new THREE.TorusGeometry(3.4, .14, 6, 28), "#ef5d5d");
+    for (let k = 0; k < 4; k++) add(W, Bx(.12, 6.8, .12), "#ffffff").rotation.z = k * Math.PI / 4;
+    add(W, Cy(.4, .4, 1.4, 10), "#6b7a8f").rotation.x = Math.PI / 2;
+    const cabins = [];
+    const cc = ["#ffd23f", "#3d8fe0", "#4fb38a", "#f07fa6"];
+    for (let k = 0; k < 8; k++) {
+      const a = k * Math.PI / 4;
+      const c = group(W, Math.cos(a) * 3.4, Math.sin(a) * 3.4, 0);
+      add(c, Bx(.9, .8, .9), cc[k % 4], 0, -.6, 0);
+      add(c, Bx(1, .12, 1), "#ffffff", 0, -.15, 0);
+      cabins.push(c);
+    }
+    spinners.push(dt => { W.rotation.z += dt * .25; cabins.forEach(c => c.rotation.z = -W.rotation.z); });
+    const M = group(g, 3.8, TOP, .4);
+    add(M, Cy(2.1, 2.1, .4, 14), "#ffe2a8", 0, .2, 0);
+    add(M, Cy(.15, .15, 2.8, 8), "#ffffff", 0, 1.6, 0);
+    add(M, Co(2.4, 1.3, 12), "#f59ab5", 0, 3.6, 0);
+    add(M, Sp(.25, 8, 6), "#ffd23f", 0, 4.4, 0);
+    const horses = group(M, 0, 0, 0);
+    ["#ffffff", "#8fc9e8", "#ffd970", "#c5b2ee"].forEach((c, k) => {
+      const a = k * Math.PI / 2;
+      add(horses, Cy(.05, .05, 2.6, 6), "#e9c46a", Math.cos(a) * 1.5, 1.6, Math.sin(a) * 1.5);
+      add(horses, Bx(.35, .5, .9), c, Math.cos(a) * 1.5, 1.2, Math.sin(a) * 1.5).rotation.y = -a;
+    });
+    spinners.push(dt => horses.rotation.y += dt * .6);
+    return [{ x: -1.6, z: -3, r: 2.6 }, { x: 3.8, z: .4, r: 2.5 }];
+  },
+  hotel(g) {
+    const T = group(g, -1.8, TOP, -2.6);
+    add(T, Bx(4.4, 9, 4), "#f3eefc", 0, 4.5, 0);
+    add(T, Bx(4.8, .4, 4.4), "#8e7cc3", 0, 9.1, 0);
+    for (let f = 0; f < 5; f++) for (let c = 0; c < 3; c++) add(T, Bx(.75, .85, .08), glow("#ffe7a8"), -1.3 + c * 1.3, 3 + f * 1.3, 2.02);
+    add(T, Bx(1.6, 1.8, .1), "#8a5a35", 0, .9, 2.02);
+    const H = group(T, 0, 10.3, .2);
+    add(H, Bx(1.8, 1.8, .3), "#ef5d5d");
+    add(H, Bx(.25, 1.2, .1), "#ffffff", -.4, 0, .2); add(H, Bx(.25, 1.2, .1), "#ffffff", .4, 0, .2); add(H, Bx(.8, .22, .1), "#ffffff", 0, 0, .2);
+    add(g, Bx(4.2, .4, 3.2), "#ffffff", 3, TOP + .2, 1.2);
+    add(g, Bx(3.6, .3, 2.6), glow("#4fc3e8", .15), 3, TOP + .25, 1.2);
+    [[1.2, 3.6, "#ef5d5d"], [4.6, 3.6, "#ffd23f"]].forEach(([x, z, c]) => {
+      add(g, Cy(.06, .06, 2.2, 6), "#ffffff", x, TOP + 1.1, z);
+      add(g, Co(1.1, .6, 8), c, x, TOP + 2.3, z);
+    });
+    return [{ x: -1.8, z: -2.6, r: 3.2 }, { x: 3, z: 1.2, r: 2.4 }];
+  },
+  breakfast(g) {
+    const S = group(g, 0, TOP, -3);
+    add(S, Bx(5.6, 3.2, 3.4), "#fffaf0", 0, 1.6, 0);
+    for (let k = 0; k < 7; k++) add(S, Bx(.82, .12, 1.7), k % 2 ? "#ffffff" : "#ef5d5d", -2.46 + k * .82, 3, 2.3).rotation.x = .35;
+    add(S, Bx(4.8, 1.1, .7), "#c99a63", 0, .55, 2);
+    add(S, Bx(1.6, .1, .5), "#3a4250", -1.2, 1.15, 2);
+    add(S, Bx(.9, 1, .1), glow("#ffe7a8"), 1.6, 2, 1.71);
+    const Tt = group(S, 0, 4.8, 0);
+    add(Tt, Bx(3, 2, .4), "#e3a857");
+    add(Tt, Cy(1.5, 1.5, .4, 14), "#e3a857", 0, 1, 0).rotation.x = Math.PI / 2;
+    add(Tt, Cy(1.1, 1.1, .1, 14), "#ffffff", 0, .4, .25).rotation.x = Math.PI / 2;
+    add(Tt, Sp(.45, 10, 6), "#ffc61a", 0, .4, .35).scale.z = .5;
+    [[-3.2, 2.2], [3, 2.6]].forEach(([x, z]) => {
+      add(g, Cy(.9, .9, .12, 12), "#ffffff", x, TOP + 1, z);
+      add(g, Cy(.1, .1, 1, 6), "#9aa6b5", x, TOP + .5, z);
+      add(g, Cy(.35, .35, .6, 10), "#ef5d5d", x - 1.25, TOP + .3, z);
+      add(g, Cy(.35, .35, .6, 10), "#ef5d5d", x + 1.25, TOP + .3, z);
+      add(g, Cy(.18, .15, .4, 8), "#fff7e0", x + .2, TOP + 1.25, z);
+    });
+    return [{ x: 0, z: -3, r: 3.4 }, { x: -3.2, z: 2.2, r: 1.8 }, { x: 3, z: 2.6, r: 1.8 }];
+  },
+  reading(g) {
+    const Bk = group(g, -1.2, TOP, -2.2);
+    Bk.rotation.y = .2;
+    [-1, 1].forEach(s => {
+      add(Bk, Bx(3, .2, 4.2), "#e85d4f", s * 1.45, .55, 0).rotation.z = -s * .22;
+      add(Bk, Bx(2.8, .35, 4), "#ffffff", s * 1.4, .8, 0).rotation.z = -s * .22;
+      for (let k = 0; k < 4; k++) add(Bk, Bx(1.8, .05, .12), "#9aa6b5", s * 1.4, 1.02, -1.2 + k * .8).rotation.z = -s * .22;
+    });
+    add(Bk, Sp(.4, 8, 6), "#ffd23f", 0, 3.4, 0);
+    const Tr = group(g, 3.8, TOP, -1.6);
+    add(Tr, Cy(.5, .75, 4.6, 8), "#8a5a35", 0, 2.3, 0);
+    add(Tr, Bx(2.4, 1.7, 2.1), "#d9a066", 0, 3.9, 0);
+    add(Tr, Co(2, 1.2, 4), "#4f8a5a", 0, 5.35, 0).rotation.y = Math.PI / 4;
+    add(Tr, Bx(.7, .9, .08), glow("#ffe7a8"), 0, 3.9, 1.06);
+    add(Tr, new THREE.IcosahedronGeometry(1.8, 0), "#6fb35a", -1.2, 6, -.8);
+    add(Tr, new THREE.IcosahedronGeometry(1.4, 0), "#7cc266", 1.3, 6.3, -.6);
+    const stack = group(g, 1.4, TOP, 2.2);
+    ["#3d8fe0", "#ffd23f", "#4fb38a", "#ef5d5d"].forEach((c, k) => add(stack, Bx(1.2 - k * .1, .3, .9), c, 0, .15 + k * .3, 0).rotation.y = k * .3);
+    return [{ x: -1.2, z: -2.2, r: 3.2 }, { x: 3.8, z: -1.6, r: 1.4 }, { x: 1.4, z: 2.2, r: .9 }];
+  }
+};
+
+// ---------- islands ----------
+const TREE_SPOTS = [Math.PI * .67, Math.PI, Math.PI * 1.33];
+ISLANDS.forEach((isl, idx) => {
+  const g = group(scene, CENTER[isl.id].x, 0, CENTER[isl.id].z);
+  const base = add(g, Cy(HEX_R, HEX_R + .5, 2.4, 6), "#e3d2ab", 0, 0, 0);
+  const top = add(g, Cy(HEX_R - .6, HEX_R - .6, .3, 6), isl.color, 0, TOP - .15, 0);
+  base.userData.ground = top.userData.ground = isl.id;
+  grounds.push(base, top);
+  for (let k = 0; k < 6; k++) {
+    const a = k * Math.PI / 3 + .4;
+    add(g, new THREE.DodecahedronGeometry(rnd(.5, .9), 0), "#b7ab95", Math.sin(a) * (HEX_R + .3), rnd(-.4, .3), Math.cos(a) * (HEX_R + .3));
+  }
+  const lm = group(g);
+  lm.userData.landmark = isl.id;
+  landmarks.push(lm);
+  BLOCK[isl.id] = BUILD[isl.id](lm);
+  TREE_SPOTS.forEach((a, k) => {
+    const x = Math.sin(a) * 7.4, z = Math.cos(a) * 7.4;
+    tree(g, x, z, rnd(.8, 1.1), k % 2 ? "#6fb35a" : "#5fa64f");
+    BLOCK[isl.id].push({ x, z, r: 1 });
+  });
+  const la = (idx % 2 ? 1 : -1) * Math.PI / 3;
+  lamp(g, Math.sin(la) * 7.6, Math.cos(la) * 7.6);
+});
+
+// ---------- bridges ----------
+BRIDGES.forEach(([a, b]) => {
+  const A = CENTER[a], B = CENTER[b];
+  const d = B.clone().sub(A);
+  const len = d.length() - 2 * HEX_R * Math.cos(Math.PI / 6) + 2.4;
+  const mid = A.clone().add(B).multiplyScalar(.5);
+  const g = group(scene, mid.x, 0, mid.z);
+  g.rotation.y = Math.atan2(d.x, d.z);
+  const deck = add(g, Bx(2.8, .3, len), "#c4935e", 0, TOP - .15, 0);
+  deck.userData.ground = `${a}|${b}`;
+  grounds.push(deck);
+  for (let z = -len / 2 + .5; z < len / 2; z += .7) add(g, Bx(2.9, .06, .14), "#a87a48", 0, TOP + .02, z);
+  [-1.35, 1.35].forEach(x => {
+    add(g, Bx(.12, .12, len - 2.2), "#8a5a35", x, TOP + .95, 0);
+    for (let z = -len / 2 + 1.2; z <= len / 2 - 1.1; z += 1.6) add(g, Cy(.08, .08, 1, 6), "#8a5a35", x, TOP + .5, z);
+  });
+  add(g, Cy(.25, .25, 3, 6), "#8a5a35", -1, 0, 0);
+  add(g, Cy(.25, .25, 3, 6), "#8a5a35", 1, 0, 0);
+});
+
+// ---------- sea decorations ----------
+for (let k = 0; k < 26; k++) {
+  const a = rnd(0, Math.PI * 2), r = rnd(46, 75);
+  const pad = add(scene, Cy(rnd(.9, 1.6), rnd(.9, 1.6), .1, 9), k % 3 ? "#7fae63" : "#93c174", Math.cos(a) * r, .12, Math.sin(a) * r);
+  pad.castShadow = false;
+  if (k % 4 === 0) add(scene, Sp(.3, 8, 6), "#f59ab5", pad.position.x + .3, .35, pad.position.z);
+}
+for (let k = 0; k < 10; k++) {
+  const a = rnd(0, Math.PI * 2), r = rnd(50, 70);
+  for (let j = 0; j < 4; j++) add(scene, Cy(.07, .07, rnd(2, 3.5), 5), "#b9b35e", Math.cos(a) * r + rnd(-1, 1), 1, Math.sin(a) * r + rnd(-1, 1));
+}
+const boat = group(scene, 0, 0, 0);
+add(boat, Bx(1.4, .7, 3.2), "#ef5d5d", 0, .3, 0);
+add(boat, Cy(.07, .07, 3, 6), "#8a5a35", 0, 2, 0);
+add(boat, Bx(.06, 2.2, 1.5), "#ffffff", 0, 2.1, .6);
+
+// ---------- kids ----------
+const KID = {
+  leg: Bx(.26, .7, .28), body: Cy(.36, .5, .85, 10), arm: Bx(.18, .6, .2), hand: Sp(.11, 6, 4),
+  head: Sp(.56, 14, 10), hair: new THREE.SphereGeometry(.6, 14, 10, 0, Math.PI * 2, 0, Math.PI * .52),
+  eye: Sp(.075, 6, 4), cheek: Sp(.09, 6, 4), brim: Cy(.72, .72, .1, 14), crown: Cy(.46, .52, .42, 14)
+};
+const SHIRTS = ["#ef5d5d", "#3d8fe0", "#ffd23f", "#ff9f43", "#8e7cc3", "#4fb38a", "#f07fa6", "#5bc0de"];
+const HAIRS = ["#2d2420", "#5a3a22", "#1d1d24", "#8a5a2b"];
+const SKINS = ["#f3c49c", "#e0a87a", "#c98b5e", "#f7d2b0"];
+const PANTS = ["#3b4a63", "#5a4a3b", "#2f3d36", "#6b5b8f"];
+
+function makeKid({ shirt, hair, skin, pants, hat }) {
+  const g = new THREE.Group();
+  const inner = group(g);
+  const legs = [-.15, .15].map(x => { const p = group(inner, x, .72, 0); add(p, KID.leg, pants, 0, -.35, 0); return p; });
+  add(inner, KID.body, shirt, 0, 1.12, 0);
+  const arms = [-.47, .47].map(x => { const p = group(inner, x, 1.45, 0); add(p, KID.arm, shirt, 0, -.27, 0); add(p, KID.hand, skin, 0, -.62, 0); return p; });
+  add(inner, KID.head, skin, 0, 2.05, 0);
+  add(inner, KID.hair, hair, 0, 2.1, -.05).rotation.x = -.38;
+  [-.2, .2].forEach(x => { add(inner, KID.eye, "#1d232b", x, 2.07, .51); add(inner, KID.cheek, "#f59a9a", x * 1.6, 1.9, .45); });
+  if (hat) { add(inner, KID.brim, hat, 0, 2.5, .08); add(inner, KID.crown, hat, 0, 2.72, 0); }
+  g.scale.setScalar(.85);
+  scene.add(g);
+  return { g, inner, legs, arms };
+}
+
+const walkers = [];
+function makeWalker(opts, island, pos) {
+  const kid = makeKid(opts);
+  const w = { kid, island, pos: pos.clone(), queue: [], wait: rnd(0, 2), phase: rnd(0, 6), swing: 0, speed: rnd(2.2, 3), ...opts.extra };
+  kid.g.traverse(o => o.userData.walker = w);
+  kid.g.position.copy(w.pos);
+  kid.g.rotation.y = rnd(-1, 1);
   walkers.push(w);
-  draw(w, 0);
+  return w;
+}
+function freeSpot(id) {
+  const c = CENTER[id];
+  for (let t = 0; t < 30; t++) {
+    const a = rnd(0, Math.PI * 2), r = Math.sqrt(Math.random()) * WALK_R;
+    const x = Math.sin(a) * r, z = Math.cos(a) * r;
+    if (BLOCK[id].every(b => Math.hypot(x - b.x, z - b.z) > b.r + .5)) return new THREE.Vector3(c.x + x, TOP, c.z + z);
+  }
+  return new THREE.Vector3(c.x, TOP, c.z + 5);
+}
+function clampOnIsland(id, p) {
+  const c = CENTER[id];
+  let x = p.x - c.x, z = p.z - c.z;
+  const r = Math.hypot(x, z);
+  if (r > WALK_R) { x *= WALK_R / r; z *= WALK_R / r; }
+  for (const b of BLOCK[id]) {
+    const dx = x - b.x, dz = z - b.z, d = Math.hypot(dx, dz) || 1;
+    if (d < b.r + .5) { x = b.x + dx / d * (b.r + .5); z = b.z + dz / d * (b.r + .5); }
+  }
+  return new THREE.Vector3(c.x + x, TOP, c.z + z);
+}
+function nearestIsland(p) {
+  let best = null, bd = Infinity;
+  for (const id in CENTER) { const d = Math.hypot(p.x - CENTER[id].x, p.z - CENTER[id].z); if (d < bd) { bd = d; best = id; } }
+  return { id: best, dist: bd };
+}
+function islandPath(from, to) {
+  const prev = { [from]: null }, q = [from];
+  while (q.length) { const n = q.shift(); if (n === to) break; for (const m of NEIGHBORS[n]) if (!(m in prev)) { prev[m] = n; q.push(m); } }
+  const path = [];
+  for (let n = to; n != null; n = prev[n]) path.unshift(n);
+  return path;
+}
+// waypoints along the bridges for a list of islands
+function hops(path) {
+  const pts = [];
+  for (let i = 0; i < path.length - 1; i++) {
+    const A = CENTER[path[i]], B = CENTER[path[i + 1]];
+    const d = B.clone().sub(A).normalize();
+    pts.push(A.clone().addScaledVector(d, 6.6).setY(TOP), Object.assign(B.clone().addScaledVector(d, -6.6).setY(TOP), { island: path[i + 1] }));
+  }
+  return pts;
 }
 
-function say(w, text) {
-  w.g.querySelector(".bubble")?.remove();
-  const width = text.length * 14 + 20;
-  const b = document.createElementNS(SVGNS, "g");
-  b.setAttribute("class", "bubble");
-  b.innerHTML = `<rect x="${-width / 2}" y="-50" width="${width}" height="26" rx="13"/><text y="-37">${text}</text>`;
-  w.g.appendChild(b);
-  w.wait = 2.6;
-  clearTimeout(w.bubbleT);
-  w.bubbleT = setTimeout(() => b.remove(), 2600);
+ISLANDS.forEach((isl, i) => {
+  for (let k = 0; k < 2; k++) {
+    const n = i * 2 + k;
+    makeWalker({ shirt: SHIRTS[n % 8], hair: HAIRS[n % 4], skin: SKINS[(n * 3) % 4], pants: PANTS[n % 4], hat: n % 5 === 0 ? "#ffffff" : null }, isl.id, freeSpot(isl.id));
+  }
+});
+const savedLook = store.get("island-look", { shirt: "#e8622c", hat: false, follow: false });
+const player = makeWalker({ shirt: savedLook.shirt, hair: "#2d2420", skin: "#f3c49c", pants: "#3b4a63", hat: savedLook.hat ? "#e8622c" : null, extra: { isPlayer: true, speed: 5.5, wait: 0 } },
+  "home", clampOnIsland("home", CENTER.home.clone().add(new THREE.Vector3(0, 0, 5))));
+const chief = makeWalker({ shirt: "#3d8fe0", hair: "#2d2420", skin: "#f3c49c", pants: "#3b4a63", hat: "#ffd23f", extra: { isChief: true } }, "park", freeSpot("park"));
+
+function rebuildPlayer(look) {
+  const rot = player.kid.g.rotation.y;
+  scene.remove(player.kid.g);
+  player.kid = makeKid({ shirt: look.shirt, hair: "#2d2420", skin: "#f3c49c", pants: "#3b4a63", hat: look.hat ? "#e8622c" : null });
+  player.kid.g.traverse(o => o.userData.walker = player);
+  player.kid.g.position.copy(player.pos);
+  player.kid.g.rotation.y = rot;
 }
 
-function plan(w) {
-  const links = BRIDGES.filter(([a, b]) => a === w.island || b === w.island);
-  if (bridgesOn && links.length && Math.random() < .3) {
-    const [a, b] = links[Math.floor(Math.random() * links.length)];
-    const other = a === w.island ? b : a;
-    const A = pos(byId[w.island]), B = pos(byId[other]);
-    w.queue = [lerp(A, B, .24), lerp(A, B, .76), { ...spotOn(other), island: other }];
+function planNpc(w) {
+  if (Math.random() < .28) {
+    const other = pick(NEIGHBORS[w.island]);
+    w.queue = [...hops([w.island, other]), Object.assign(freeSpot(other), { island: other })];
   } else {
-    w.queue = [spotOn(w.island)];
+    w.queue = [freeSpot(w.island)];
   }
 }
-
-function draw(w, swing) {
-  const bob = -Math.abs(Math.sin(w.phase)) * 1.6 * (swing ? 1 : 0);
-  w.g.setAttribute("transform", `translate(${w.x.toFixed(1)} ${w.y.toFixed(1)})`);
-  w.body.setAttribute("transform", `translate(0 ${bob.toFixed(2)})`);
-  const deg = Math.sin(w.phase) * 28 * swing;
-  w.legs[0].setAttribute("transform", `rotate(${deg.toFixed(1)} -3 6)`);
-  w.legs[1].setAttribute("transform", `rotate(${(-deg).toFixed(1)} 3 6)`);
+const lerpAngle = (a, b, t) => a + ((((b - a + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) - Math.PI) * t;
+function pose(w, moving, dt) {
+  w.swing += ((moving ? 1 : 0) - w.swing) * Math.min(1, dt * 8);
+  const s = Math.sin(w.phase) * .7 * w.swing;
+  w.kid.legs[0].rotation.x = s; w.kid.legs[1].rotation.x = -s;
+  w.kid.arms[0].rotation.x = -s * .8; w.kid.arms[1].rotation.x = s * .8;
+  w.kid.inner.position.y = Math.abs(Math.sin(w.phase)) * .14 * w.swing;
+  w.kid.g.position.copy(w.pos);
 }
-
-function step(w, dt) {
-  if (w.wait > 0) { w.wait -= dt; draw(w, 0); return; }
-  if (!w.queue.length) plan(w);
+function stepWalker(w, dt) {
+  if (w.wait > 0) { w.wait -= dt; pose(w, 0, dt); return; }
+  if (!w.queue.length) {
+    if (w.isPlayer || w.isChief || reduceMotion) { pose(w, 0, dt); return; }
+    planNpc(w);
+  }
   const t = w.queue[0];
-  const dx = t.x - w.x, dy = t.y - w.y, dist = Math.hypot(dx, dy), move = w.speed * dt;
-  if (dist <= move) {
-    w.x = t.x; w.y = t.y;
+  const dx = t.x - w.pos.x, dz = t.z - w.pos.z, dist = Math.hypot(dx, dz), mv = w.speed * dt;
+  if (dist > .01) w.kid.g.rotation.y = lerpAngle(w.kid.g.rotation.y, Math.atan2(dx, dz), Math.min(1, dt * 10));
+  if (dist <= mv) {
+    w.pos.set(t.x, TOP, t.z);
     if (t.island) w.island = t.island;
     w.queue.shift();
-    if (!w.queue.length) w.wait = rnd(.8, 3.5);
+    if (!w.queue.length) {
+      if (w.isPlayer) marker.visible = false;
+      else w.wait = rnd(1, 4);
+    }
   } else {
-    w.x += dx / dist * move; w.y += dy / dist * move;
+    w.pos.x += dx / dist * mv; w.pos.z += dz / dist * mv;
   }
-  w.phase += dt * 11;
-  draw(w, 1);
+  w.phase += dt * w.speed * 2.8;
+  pose(w, 1, dt);
 }
 
-function startWalkers() {
-  ISLANDS.forEach((isl, i) => { makeWalker(isl.id, i * 2); makeWalker(isl.id, i * 2 + 1); });
-  if (reduceMotion) return;
-  let last = performance.now();
-  const tick = now => {
-    const dt = Math.min(.05, (now - last) / 1000);
-    last = now;
-    walkers.forEach(w => step(w, dt));
-    // draw walkers lower on the map in front of the ones above them
-    const layer = document.getElementById("walkers");
-    const order = walkers.slice().sort((a, b) => a.y - b.y);
-    const busy = layer.contains(document.activeElement);
-    if (!busy && order.some((w, i) => layer.children[i] !== w.g)) order.forEach(w => layer.appendChild(w.g));
-    requestAnimationFrame(tick);
-  };
-  requestAnimationFrame(tick);
+// tap target marker
+const marker = new THREE.Mesh(new THREE.RingGeometry(.5, .75, 24), new THREE.MeshBasicMaterial({ color: "#e8622c", transparent: true, opacity: .9, side: THREE.DoubleSide }));
+marker.rotation.x = -Math.PI / 2;
+marker.visible = false;
+scene.add(marker);
+
+function sendPlayer(queue, final) {
+  player.queue = queue;
+  player.wait = 0;
+  marker.position.set(final.x, TOP + .05, final.z);
+  marker.visible = true;
+  hint.style.opacity = 0;
+}
+function walkPlayerTo(point, island) {
+  const final = Object.assign(clampOnIsland(island, point), { island });
+  sendPlayer([...hops(islandPath(nearestIsland(player.pos).id, island)), final], final);
 }
 
-drawBoard();
-startWalkers();
+// ---------- HTML labels ----------
+const labelsEl = document.getElementById("labels");
+const hint = document.getElementById("hint");
+const pills = ISLANDS.map(isl => {
+  const el = document.createElement("button");
+  el.className = "pill";
+  el.innerHTML = `<span class="num">${isl.num}</span>${isl.name}`;
+  el.addEventListener("click", () => openIsland(isl.id, true));
+  labelsEl.appendChild(el);
+  return { el, world: CENTER[isl.id].clone().add(new THREE.Vector3(0, 11.5, -2.5)) };
+});
+const mePill = document.createElement("div");
+mePill.className = "pill me";
+mePill.innerHTML = "<b>我</b><span>小探險家</span>";
+labelsEl.appendChild(mePill);
+
+const tmp = new THREE.Vector3(), up = new THREE.Vector3();
+function place(el, world, dy = 0) {
+  tmp.copy(world).project(camera);
+  if (tmp.z > 1 || Math.abs(tmp.x) > 1.3 || Math.abs(tmp.y) > 1.3) { el.style.visibility = "hidden"; return; }
+  el.style.visibility = "visible";
+  const x = (tmp.x + 1) / 2 * innerWidth, y = (1 - tmp.y) / 2 * innerHeight + dy;
+  el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -100%)`;
+}
+function say(w, text) {
+  w.bubble?.el.remove();
+  const el = document.createElement("div");
+  el.className = "bubble";
+  el.textContent = text;
+  labelsEl.appendChild(el);
+  w.bubble = { el, until: performance.now() + 2800 };
+  w.wait = Math.max(w.wait, 2.8);
+  w.kid.g.rotation.y = Math.atan2(camera.position.x - w.pos.x, camera.position.z - w.pos.z);
+}
+
+// ---------- passport ----------
+const visited = new Set(store.get("island-stamps-3d", []));
+function renderStamps() {
+  document.getElementById("stamps").innerHTML = ISLANDS.map(i =>
+    `<span class="stamp ${visited.has(i.id) ? "on" : ""}" title="${i.name}" style="${visited.has(i.id) ? `background:${i.color}` : ""}"></span>`).join("");
+  document.getElementById("pcount").textContent = `探險護照 ${visited.size}/7`;
+}
+function checkVisit() {
+  const n = nearestIsland(player.pos);
+  if (n.dist > 8 || visited.has(n.id)) return;
+  visited.add(n.id);
+  store.set("island-stamps-3d", [...visited]);
+  renderStamps();
+  if (visited.size === 7) toast("七座島全部走過了！你是小島探險王！");
+  else if (visited.size > 1) toast(`蓋章！${byId[n.id].name}到此一遊`);
+}
+
+// ---------- camera moves ----------
+let tween = null, follow = !!savedLook.follow;
+function flyTo(target, pos) {
+  if (reduceMotion) { controls.target.copy(target); camera.position.copy(pos); return; }
+  tween = { t: 0, fT: controls.target.clone(), tT: target, fP: camera.position.clone(), tP: pos };
+}
+function overview() {
+  const k = innerWidth / innerHeight < 1 ? 2.15 : 1;
+  flyTo(new THREE.Vector3(0, 0, 3), new THREE.Vector3(0, 78 * k, 88 * k));
+}
+function focusIsland(id) {
+  const c = CENTER[id];
+  const k = innerWidth / innerHeight < 1 ? 1.45 : 1;
+  const phone = innerWidth <= 700;
+  flyTo(new THREE.Vector3(c.x + (phone ? 0 : 8), 2, c.z + (phone ? 6 : 0)), new THREE.Vector3(c.x + (phone ? 0 : 8), 2 + 26 * k, c.z + (phone ? 6 : 0) + 32 * k));
+}
+
+// ---------- panel ----------
+const panel = document.getElementById("panel");
+const bChar = document.getElementById("b-char"), bList = document.getElementById("b-list");
+let panelMode = null;
+function setPanel(mode, html) {
+  panelMode = mode;
+  panel.hidden = !mode;
+  bChar.setAttribute("aria-pressed", String(mode === "char"));
+  bList.setAttribute("aria-pressed", String(mode === "list"));
+  if (mode) {
+    panel.innerHTML = html;
+    panel.querySelector(".close")?.addEventListener("click", () => setPanel(null));
+  }
+}
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function openIsland(id, fly, term = "") {
+  const isl = byId[id];
+  const friends = BRIDGES.filter(([a, b]) => a === id || b === id).map(([a, b, why]) => ({ other: a === id ? b : a, why }));
+  setPanel("island", `
+    <div class="panel-head">
+      <div><h2><span class="num">${isl.num}</span>${isl.name}</h2><p class="sub">${isl.tagline}</p></div>
+      <button class="close" aria-label="關閉">×</button>
+    </div>
+    <button class="go" id="go">讓「我」走去${isl.name}</button>
+    <div><p class="label">島上的 ${isl.spots.length} 個好玩地方</p>
+      <ol class="spots">${isl.spots.map(([n, d, t], k) => `<li class="spot ${term && (n + d + t).includes(term) ? "hit" : ""}">
+        <i style="background:${isl.color}">${k + 1}</i><div><h3>${n}</h3><p>${d}</p></div></li>`).join("")}</ol></div>
+    <div><p class="label">走好朋友橋，去隔壁島</p>
+      <div class="chips">${friends.map(f => `<button class="chip" data-go="${f.other}"><b>${byId[f.other].name}</b><span>${f.why}</span></button>`).join("")}</div></div>`);
+  panel.querySelector("#go").addEventListener("click", () => {
+    walkPlayerTo(CENTER[id].clone().add(new THREE.Vector3(rnd(-2, 2), 0, 5)), id);
+    if (innerWidth <= 700) setPanel(null);
+  });
+  panel.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => openIsland(b.dataset.go, true)));
+  if (fly) focusIsland(id);
+}
+
+function openList(term = "") {
+  const t = term.trim();
+  const rows = ISLANDS.map(isl => {
+    const hits = t ? isl.spots.filter(([n, d, tags]) => (n + d + tags).includes(t)) : [];
+    if (t && !hits.length && !isl.name.includes(t)) return "";
+    const hl = s => t ? esc(s).split(esc(t)).join(`<mark>${esc(t)}</mark>`) : esc(s);
+    const sub = t && hits.length ? hits.map(h => hl(h[0])).join("、") : esc(isl.spots.map(s => s[0]).join("、"));
+    return `<button class="isle-row" data-id="${isl.id}"><b><span class="num">${isl.num}</span>${hl(isl.name)}</b><span>${sub}</span></button>`;
+  }).join("");
+  setPanel("list", `
+    <div class="panel-head"><h2>島嶼清單</h2><button class="close" aria-label="關閉">×</button></div>
+    <input class="search" id="search" type="search" placeholder="找找看：蛋餅、恐龍、摩天輪…" value="${esc(term)}" aria-label="搜尋島上的地點">
+    <div class="isle-list">${rows || `<p class="sub">沒有找到「${esc(t)}」，換個字試試看，例如：游泳、恐龍、蛋餅。</p>`}</div>`);
+  const input = panel.querySelector("#search");
+  input.addEventListener("input", () => {
+    const pos = input.selectionStart;
+    openList(input.value);
+    const again = panel.querySelector("#search");
+    again.focus();
+    again.setSelectionRange(pos, pos);
+  });
+  panel.querySelectorAll("[data-id]").forEach(b => b.addEventListener("click", () => openIsland(b.dataset.id, true, t)));
+}
+
+const LOOKS = ["#e8622c", "#3d8fe0", "#4fb38a", "#8e7cc3", "#f07fa6", "#ffd23f"];
+function openChar() {
+  setPanel("char", `
+    <div class="panel-head"><div><h2>我的角色</h2><p class="sub">選一件喜歡的衣服，再出發去探險。</p></div><button class="close" aria-label="關閉">×</button></div>
+    <div><p class="label">衣服顏色</p><div class="swatches">${LOOKS.map(c =>
+      `<button class="swatch" data-c="${c}" style="background:${c}" aria-label="衣服顏色" aria-pressed="${c === savedLook.shirt}"></button>`).join("")}</div></div>
+    <label class="row"><input type="checkbox" id="opt-hat" ${savedLook.hat ? "checked" : ""}>戴上探險帽</label>
+    <label class="row"><input type="checkbox" id="opt-follow" ${follow ? "checked" : ""}>鏡頭跟著我走</label>`);
+  panel.querySelectorAll(".swatch").forEach(b => b.addEventListener("click", () => {
+    savedLook.shirt = b.dataset.c; store.set("island-look", savedLook); rebuildPlayer(savedLook);
+    panel.querySelectorAll(".swatch").forEach(s => s.setAttribute("aria-pressed", String(s === b)));
+  }));
+  panel.querySelector("#opt-hat").addEventListener("change", e => { savedLook.hat = e.target.checked; store.set("island-look", savedLook); rebuildPlayer(savedLook); });
+  panel.querySelector("#opt-follow").addEventListener("change", e => { follow = savedLook.follow = e.target.checked; store.set("island-look", savedLook); });
+}
+
+document.getElementById("b-view").addEventListener("click", () => { setPanel(null); overview(); });
+bChar.addEventListener("click", () => panelMode === "char" ? setPanel(null) : openChar());
+bList.addEventListener("click", () => panelMode === "list" ? setPanel(null) : openList());
+
+// ---------- time of day ----------
+const TIMES = [
+  { name: "白天", sky: "#bfe3f0", hemi: ["#ffffff", "#b9a98a", 1.3], sun: ["#fff6e8", 2.2], water: "#5ea3b8", glow: 0 },
+  { name: "傍晚", sky: "#f7c8a0", hemi: ["#ffd9b8", "#9a7f6a", 1], sun: ["#ffb27a", 1.7], water: "#5d8ea6", glow: .6 },
+  { name: "晚上", sky: "#1c2b4a", hemi: ["#7f93c9", "#2a2f45", .55], sun: ["#9fb5ff", .5], water: "#24466e", glow: 1.4 }
+];
+let timeIdx = 0;
+function applyTime(i) {
+  const T = TIMES[i];
+  scene.background.set(T.sky); scene.fog.color.set(T.sky);
+  hemi.color.set(T.hemi[0]); hemi.groundColor.set(T.hemi[1]); hemi.intensity = T.hemi[2];
+  sun.color.set(T.sun[0]); sun.intensity = T.sun[1];
+  waterMat.color.set(T.water);
+  glowMats.forEach(m => m.emissiveIntensity = Math.max(m.userData.day, T.glow));
+  document.body.style.background = T.sky;
+  document.getElementById("time-label").textContent = T.name;
+}
+document.getElementById("b-time").addEventListener("click", () => { timeIdx = (timeIdx + 1) % TIMES.length; applyTime(timeIdx); toast(`現在是${TIMES[timeIdx].name}`); });
+
+// ---------- tapping the world ----------
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+let down = null;
+renderer.domElement.addEventListener("pointerdown", e => { down = { x: e.clientX, y: e.clientY, id: e.pointerId }; tween = null; });
+renderer.domElement.addEventListener("pointerup", e => {
+  if (!down || down.id !== e.pointerId || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6) { down = null; return; }
+  down = null;
+  ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const targets = [...walkers.map(w => w.kid.g), ...landmarks, ...grounds];
+  for (const hit of ray.intersectObjects(targets, true)) {
+    let o = hit.object;
+    while (o && !o.userData.walker && !o.userData.landmark && !o.userData.ground) o = o.parent;
+    if (!o) continue;
+    if (o.userData.walker) { tapWalker(o.userData.walker); return; }
+    if (o.userData.landmark) { openIsland(o.userData.landmark, false); return; }
+    const g = o.userData.ground;
+    if (g.includes("|")) {
+      // a bridge: walk to whichever end is closer, then out onto the bridge
+      const [a, b] = g.split("|");
+      const cur = nearestIsland(player.pos).id;
+      const end = islandPath(cur, a).length <= islandPath(cur, b).length ? a : b;
+      const final = hit.point.clone().setY(TOP);
+      sendPlayer([...hops(islandPath(cur, end)), final], final);
+    } else {
+      walkPlayerTo(hit.point, g);
+    }
+    return;
+  }
+});
+function tapWalker(w) {
+  if (w.isPlayer) { say(w, "我們去探險吧！"); return; }
+  if (w.isChief) {
+    const from = w.island;
+    const to = pick(ISLANDS.filter(i => i.id !== from)).id;
+    toast(`你在${byId[from].name}找到小島長了！他又偷偷跑去${byId[to].name}…`);
+    w.island = to; w.pos.copy(freeSpot(to)); w.kid.g.position.copy(w.pos);
+    return;
+  }
+  say(w, pick(SAYS[nearestIsland(w.pos).id]));
+}
+
+// ---------- loop ----------
+addEventListener("resize", () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
 renderStamps();
-select("home");
+applyTime(0);
+overview();
+if (tween) { controls.target.copy(tween.tT); camera.position.copy(tween.tP); tween = null; }
+checkVisit();
+
+const clock = new THREE.Clock();
+let elapsed = 0;
+function frame() {
+  const dt = Math.min(.05, clock.getDelta());
+  elapsed += dt;
+  if (!reduceMotion) {
+    animateWater(elapsed);
+    spinners.forEach(f => f(dt));
+    const a = elapsed * .05;
+    boat.position.set(Math.cos(a) * 58, Math.sin(elapsed * 1.5) * .1, Math.sin(a) * 50);
+    boat.rotation.y = -a;
+  } else {
+    boat.position.set(-58, 0, 20);
+  }
+  walkers.forEach(w => stepWalker(w, dt));
+  if (!chief.queue.length) chief.kid.g.rotation.y += dt * .8;
+  checkVisit();
+  if (marker.visible) marker.scale.setScalar(1 + Math.sin(elapsed * 6) * .12);
+
+  if (tween) {
+    tween.t = Math.min(1, tween.t + dt);
+    const e = 1 - Math.pow(1 - tween.t, 3);
+    controls.target.lerpVectors(tween.fT, tween.tT, e);
+    camera.position.lerpVectors(tween.fP, tween.tP, e);
+    if (tween.t >= 1) tween = null;
+  } else if (follow) {
+    up.copy(player.pos).sub(controls.target).setY(0).multiplyScalar(Math.min(1, dt * 3));
+    controls.target.add(up); camera.position.add(up);
+  }
+  controls.update();
+  renderer.render(scene, camera);
+
+  pills.forEach(p => place(p.el, p.world));
+  place(mePill, up.copy(player.pos).setY(TOP + 3.1));
+  const now = performance.now();
+  walkers.forEach(w => {
+    if (!w.bubble) return;
+    if (now > w.bubble.until) { w.bubble.el.remove(); w.bubble = null; return; }
+    place(w.bubble.el, up.copy(w.pos).setY(TOP + (w.isPlayer ? 4.4 : 3)), -6);
+  });
+  requestAnimationFrame(frame);
+}
+frame();
+const loading = document.getElementById("loading");
+loading.style.opacity = 0;
+setTimeout(() => loading.remove(), 700);
 </script>
 </body>
 </html>
